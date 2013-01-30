@@ -98,12 +98,7 @@ public class OTRChatManager {
                     chatTab.addText("[OTR] Partner PublicKey is " + OTRKeyGen.getFingerprint(newKey));
                     chatTab.addText("[OTR] PLEASE VERIFY THIS KEY WITH EXTERNAL MEANS BEFORE PROCEEDING YOUR CHAT");
                     userKeys.put(from, newKey);
-                    new Thread() {
-                        @Override
-                        public void run() {
-                            chatTab.disableChatEntryFor(5000);
-                        }
-                    }.start();
+                    chatTab.disableChatEntryFor(5000);
                 } catch(Exception e) {
                     e.printStackTrace();
                     return;
