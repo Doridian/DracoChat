@@ -22,6 +22,7 @@ public class ClientPacketHandler extends PacketHandler {
         handshakeFuture.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                FormMain.genericChatTab.addText("[NET] Connected");
                 ClientLib.clientDataChannel = channelFuture.getChannel();
                 ClientLib.sendLogin();
             }
@@ -84,6 +85,7 @@ public class ClientPacketHandler extends PacketHandler {
                             new Thread() {
                                 public void run() {
                                     try {
+                                        FormMain.genericChatTab.addText("[NET] Disconnected");
                                         Thread.sleep(1000);
                                         if(ClientLib.ENABLE_AUTORECONNECT) {
                                             ClientLib.login();

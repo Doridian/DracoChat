@@ -3,6 +3,7 @@ package me.draconia.chat.types;
 public class User implements MessageContext {
     public final String login;
     private String nickname;
+    private String contextName;
 
     protected static User SYSTEM;
 
@@ -12,6 +13,7 @@ public class User implements MessageContext {
 
     protected User(String login) {
         this.login = login;
+        this.contextName = login;
     }
 
     @Override
@@ -25,6 +27,11 @@ public class User implements MessageContext {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+        if(this.nickname == null) {
+            this.contextName = this.login;
+        } else {
+            this.contextName = this.login + " [" + this.nickname + "]";
+        }
     }
 
     @Override
@@ -43,10 +50,6 @@ public class User implements MessageContext {
 
     @Override
     public String getContextName() {
-        if(nickname == null) {
-            return  "*" + login;
-        } else {
-            return nickname;
-        }
+        return contextName;
     }
 }
