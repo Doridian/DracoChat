@@ -58,6 +58,7 @@ public class ClientPacketHandler extends PacketHandler {
             case Packets.LOGIN:
                 PacketLoginResponse packetLoginResponse = (PacketLoginResponse)packet;
                 if(packetLoginResponse.success) {
+                    ClientLib.ENABLE_AUTORECONNECT = true;
                     ClientLib.myUser = (ClientUser)UserFactory.instance.getFromLogin(ClientLib.myLogin);
                     ClientLib.myUser.setNickname(packetLoginResponse.nickname);
                     FormMain.genericChatTab.addText("[MOTD] " + packetLoginResponse.message);
@@ -68,7 +69,9 @@ public class ClientPacketHandler extends PacketHandler {
                                 public void run() {
                                     try {
                                         Thread.sleep(1000);
-                                        ClientLib.login();
+                                        if(ClientLib.ENABLE_AUTORECONNECT) {
+                                            ClientLib.login();
+                                        }
                                     } catch (Exception e) {
 
                                     }
@@ -76,12 +79,6 @@ public class ClientPacketHandler extends PacketHandler {
                             }.start();
                         }
                     });
-
-                    TextMessage test = new TextMessage();
-                    test.content = "hai";
-                    test.context = ClientLib.myUser;
-                    test.type = TextMessage.TYPE_CHAT;
-                    OTRChatManager.sendMessage(test);
 
                     FormMain.instance.onSuccessfulLogin();
                 } else {
@@ -100,6 +97,7 @@ public class ClientPacketHandler extends PacketHandler {
                 }
                 break;
             case Packets.DISCONNECT:
+                ClientLib.ENABLE_AUTORECONNECT = false;
                 PacketDisconnect packetDisconnect = (PacketDisconnect)packet;
                 FormMain.genericChatTab.addText("[QUIT] " + packetDisconnect.message);
                 ctx.getChannel().close();

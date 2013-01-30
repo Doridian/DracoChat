@@ -23,6 +23,7 @@ public class ClientLib {
     private static String myPassord = null;
 
     public static boolean ALWAYS_OTR = true;
+    public static boolean ENABLE_AUTORECONNECT = false;
 
     public static void setPassword(String password) {
         myPassord = password;
