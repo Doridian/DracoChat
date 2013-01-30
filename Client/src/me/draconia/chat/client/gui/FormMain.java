@@ -59,15 +59,15 @@ public class FormMain {
         clientBootstrap.setOption("tcpNoDelay", true);
         clientBootstrap.setOption("keepAlive", true);
 
-        FormMain.instance.rootFrame = new JFrame("DracoChat");
-        FormMain.instance.rootFrame.setMinimumSize(new Dimension(640, 480));
-        FormMain.instance.rootFrame.setLocationRelativeTo(null);
-        FormMain.instance.rootFrame.setContentPane(instance.rootPanel);
-        FormMain.instance.rootFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        FormMain.instance.rootFrame.pack();
-        FormMain.instance.rootFrame.setVisible(true);
+        instance.rootFrame = new JFrame("DracoChat");
+        instance.rootFrame.setMinimumSize(new Dimension(640, 480));
+        instance.rootFrame.setLocationRelativeTo(null);
+        instance.rootFrame.setContentPane(instance.rootPanel);
+        instance.rootFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        instance.rootFrame.pack();
+        instance.rootFrame.setVisible(true);
 
-        FormMain.instance.rootFrame.addWindowListener(new WindowAdapter() {
+        instance.rootFrame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
                 exit();
@@ -101,7 +101,7 @@ public class FormMain {
         //Refresh tab for user/channel, if present
         ChatTab contextChatTab = getChatTabNoCreate(messageContext);
         if(contextChatTab != null) {
-            final int index = chatTabs.indexOfTabComponent(contextChatTab.chatTabPanel);
+            final int index = chatTabs.indexOfComponent(contextChatTab.chatTabPanel);
             if(index >= 0)
                 chatTabs.setTitleAt(index, messageContext.getContextName());
         }
@@ -112,6 +112,10 @@ public class FormMain {
             for(ChatTab chatTab : tabMap.values()) {
                 chatTab.userNicknameChanged(userContext);
             }
+        }
+
+        if(messageContext.equals(ClientLib.myUser)) {
+            instance.rootFrame.setTitle("DracoChat - " + ClientLib.myUser.getNickname() + " [" + ClientLib.myUser.login + "]");
         }
     }
 
