@@ -40,10 +40,10 @@ public class ClientLib {
         msg.content = message;
         msg.type = type;
         msg.from = myUser;
-        sendMessage(msg);
+        sendEncryptableMessage(msg);
     }
 
-    public static void sendEncryptableMessage(TextMessage message) {
+    public static void sendEncryptableMessage(Message message) {
         message.from = ClientLib.myUser;
         if(message.context instanceof ClientUser && (ALWAYS_OTR || OTRChatManager.isOTR((ClientUser)message.context))) {
             message.encrypted = true;

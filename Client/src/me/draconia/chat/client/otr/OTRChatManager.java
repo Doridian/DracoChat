@@ -4,6 +4,7 @@ import me.draconia.chat.client.ClientLib;
 import me.draconia.chat.client.ClientUser;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.types.BinaryMessage;
+import me.draconia.chat.types.Message;
 import me.draconia.chat.types.TextMessage;
 
 import javax.crypto.Cipher;
@@ -18,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class OTRChatManager {
     private static HashMap<ClientUser, PublicKey> userKeys = new HashMap<ClientUser, PublicKey>();
 
-    private static HashMap<ClientUser, Queue<TextMessage>> messageQueue = new HashMap<ClientUser, Queue<TextMessage>>();
+    private static HashMap<ClientUser, Queue<Message>> messageQueue = new HashMap<ClientUser, Queue<Message>>();
 
     public static void initWith(ClientUser clientUser) {
         BinaryMessage binaryMessage = new BinaryMessage();
@@ -32,33 +33,38 @@ public class OTRChatManager {
         return userKeys.containsKey(otherUser);
     }
 
-    public static void sendMessage(TextMessage textMessage) {
-        if(!(textMessage.context instanceof ClientUser)) {
+    public static void sendMessage(Message message) {
+        if(!(message.context instanceof ClientUser)) {
             throw new Error("Only PMs can be encrypted");
         }
 
-        ClientUser clientUser = (ClientUser)textMessage.context;
+        ClientUser clientUser = (ClientUser)message.context;
         PublicKey publicKey = userKeys.get(clientUser);
         if(publicKey == null) {
-            Queue<TextMessage> messages = messageQueue.get(clientUser);
+            Queue<Message> messages = messageQueue.get(clientUser);
             if(messages == null) {
-                messages = new ConcurrentLinkedQueue<TextMessage>();
+                messages = new ConcurrentLinkedQueue<Message>();
                 messageQueue.put(clientUser, messages);
             }
-            messages.add(textMessage);
+            messages.add(message);
             initWith(clientUser);
             return;
         }
 
         BinaryMessage binaryMessage = new BinaryMessage();
-        binaryMessage.context = textMessage.context;
+        binaryMessage.context = message.context;
         binaryMessage.type = BinaryMessage.TYPE_OTR_MESSGAE;
 
         try {
             Cipher encryptionCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", OTRKeyGen.provider);
             encryptionCipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            encryptionCipher.update(new byte[] { textMessage.type });
-            encryptionCipher.update(textMessage.content.getBytes("UTF-8"));
+            byte messageClass = (message instanceof TextMessage) ? (byte)0 : (byte)1;
+            encryptionCipher.update(new byte[] { messageClass, message.type });
+            if(messageClass == 0) {
+                encryptionCipher.update(((TextMessage)message).content.getBytes("UTF-8"));
+            } else {
+                encryptionCipher.update(((BinaryMessage)message).content);
+            }
             binaryMessage.content = encryptionCipher.doFinal();
         } catch(Exception e) {
             e.printStackTrace();
@@ -90,9 +96,9 @@ public class OTRChatManager {
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
-                Queue<TextMessage> messages = messageQueue.remove(from);
+                Queue<Message> messages = messageQueue.remove(from);
                 if(messages != null) {
-                    for(TextMessage message : messages) {
+                    for(Message message : messages) {
                         sendMessage(message);
                     }
                 }
@@ -103,18 +109,37 @@ public class OTRChatManager {
                     Cipher decryptionCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", OTRKeyGen.provider);
                     decryptionCipher.init(Cipher.DECRYPT_MODE, OTRKeyGen.otrPrivateKey);
                     decryptionCipher.update(binaryMessage.content);
-                    TextMessage textMessage = new TextMessage();
-                    byte[] text = decryptionCipher.doFinal();
-                    textMessage.type = text[0];
-                    textMessage.content = new String(Arrays.copyOfRange(text, 1, text.length), "UTF-8");
-                    textMessage.timestamp = binaryMessage.timestamp;
-                    textMessage.context = binaryMessage.context;
-                    textMessage.from = binaryMessage.from;
-                    textMessage.encrypted = true;
-                    if(textMessage.type == TextMessage.TYPE_SYSTEM || textMessage.type == TextMessage.TYPE_SYSTEM_ERROR) {
-                        return;
+                    Message message;
+                    byte[] payload = decryptionCipher.doFinal();
+                    final byte msgType = payload[1];
+                    final byte msgClass = payload[0];
+                    payload = Arrays.copyOfRange(payload, 2, payload.length);
+                    switch (msgClass) {
+                        case 0:
+                            TextMessage textMessage = new TextMessage();
+                            textMessage.content = new String(payload, "UTF-8");
+                            message = textMessage;
+                            if(msgType == TextMessage.TYPE_SYSTEM || msgType == TextMessage.TYPE_SYSTEM_ERROR) {
+                                return;
+                            }
+                            break;
+                        case 1:
+                            BinaryMessage decodedBinaryMessage = new BinaryMessage();
+                            decodedBinaryMessage.content = payload;
+                            message = decodedBinaryMessage;
+                            if(msgType == BinaryMessage.TYPE_OTR_MESSGAE || msgType == BinaryMessage.TYPE_OTR_PUBKEY_1 || msgType == BinaryMessage.TYPE_OTR_PUBKEY_2) {
+                                return;
+                            }
+                            break;
+                        default:
+                            return;
                     }
-                    FormMain.instance.getChatTab(textMessage.context).messageReceived(textMessage);
+                    message.type = msgType;
+                    message.timestamp = binaryMessage.timestamp;
+                    message.context = binaryMessage.context;
+                    message.from = binaryMessage.from;
+                    message.encrypted = true;
+                    FormMain.instance.getChatTab(message.context).messageReceived(message);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }

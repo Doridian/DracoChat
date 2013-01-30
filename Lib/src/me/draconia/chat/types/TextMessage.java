@@ -7,7 +7,6 @@ public class TextMessage extends Message {
     public static final byte TYPE_SYSTEM = 4; //System messages
     public static final byte TYPE_SYSTEM_ERROR = 5; //System error messages
 
-    public boolean encrypted = false;
     public boolean compressContents = false;
     public String content;
 }
