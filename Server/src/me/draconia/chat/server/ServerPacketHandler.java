@@ -11,6 +11,7 @@ import me.draconia.chat.types.UserFactory;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.ssl.SslHandler;
 
+import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Set;
 
@@ -160,7 +161,7 @@ public class ServerPacketHandler extends PacketHandler {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
-        if(e.getCause() instanceof ClosedChannelException)
+        if(e.getCause() instanceof ClosedChannelException || e.getCause() instanceof IOException)
             return;
         e.getCause().printStackTrace();
     }

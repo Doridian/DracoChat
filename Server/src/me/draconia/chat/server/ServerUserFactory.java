@@ -14,6 +14,7 @@ public class ServerUserFactory extends UserFactory {
         if(ret != null)
             return ret;
         ret = new ServerUser(login);
+        ret.setNickname(login);
         userMap.put(login, ret);
         return ret;
     }
