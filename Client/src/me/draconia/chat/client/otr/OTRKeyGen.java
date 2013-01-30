@@ -19,8 +19,8 @@ public class OTRKeyGen {
     static PrivateKey otrPrivateKey;
     static PublicKey otrPublicKey;
 
-    private static byte[] SALT = { 11, 38, 58, 18, 58, 18, 125, -110 };
-    private static int ITERATIONS = 64;
+    private static final byte[] SALT = { 11, 38, 58, 18, 58, 18, 125, -110 };
+    private static final int ITERATIONS = 64;
 
     static {
         provider = new BouncyCastleProvider();
@@ -56,7 +56,9 @@ public class OTRKeyGen {
 
         if(keyPair == null) {
             try {
-                keyPair = KeyPairGenerator.getInstance("RSA", provider).generateKeyPair();
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", provider);
+                keyPairGenerator.initialize(2048);
+                keyPair = keyPairGenerator.generateKeyPair();
             } catch(Exception e) {
                 e.printStackTrace();
                 return;
