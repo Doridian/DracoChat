@@ -121,7 +121,7 @@ public class ClientPacketHandler extends PacketHandler {
             case Packets.MESSAGE:
                 Message message = ((PacketMessageToClient)packet).message;
                 if(message instanceof TextMessage) {
-                    ChatTab chatTab = FormMain.instance.getChatTab(message.context);
+                    ChatTab chatTab = FormMain.instance.getChatTab(message);
                     chatTab.messageReceived(message);
                 } else if(message instanceof BinaryMessage) {
                     BinaryMessage binaryMessage = (BinaryMessage)message;

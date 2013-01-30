@@ -2,7 +2,10 @@ package me.draconia.chat.client.otr;
 
 import me.draconia.chat.client.ClientLib;
 import me.draconia.chat.client.gui.FormMain;
+import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.jce.spec.ECParameterSpec;
+import org.bouncycastle.jce.spec.IESParameterSpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -18,6 +21,9 @@ public class OTRKeyGen {
 
     static PrivateKey otrPrivateKey;
     static PublicKey otrPublicKey;
+
+    public static final ECParameterSpec ecParameterSpec = ECNamedCurveTable.getParameterSpec("secp521r1");
+    public static final IESParameterSpec iesParameterSpec = new IESParameterSpec(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new byte[] { 8, 7, 6, 5, 4, 3, 2, 1 }, 128);
 
     private static final byte[] SALT = { 11, 38, 58, 18, 58, 18, 125, -110 };
     private static final int ITERATIONS = 64;
@@ -49,15 +55,16 @@ public class OTRKeyGen {
             keyPair = (KeyPair)objectInputStream.readObject();
             objectInputStream.close();
         } catch (FileNotFoundException e) {
-            FormMain.genericChatTab.addText("[OTR] Generating new key");
+            //IGNORE
         } catch(Exception e) {
             e.printStackTrace();
         }
 
         if(keyPair == null) {
+            FormMain.genericChatTab.addText("[OTR] Generating new key");
             try {
-                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", provider);
-                keyPairGenerator.initialize(2048);
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("ECIES", provider);
+                keyPairGenerator.initialize(ecParameterSpec, new SecureRandom());
                 keyPair = keyPairGenerator.generateKeyPair();
             } catch(Exception e) {
                 e.printStackTrace();

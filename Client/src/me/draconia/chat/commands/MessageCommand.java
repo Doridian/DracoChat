@@ -1,7 +1,6 @@
 package me.draconia.chat.commands;
 
 import me.draconia.chat.client.ClientLib;
-import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.types.*;
 import me.draconia.chat.util.IntUtils;
 

@@ -56,7 +56,7 @@ public class ClientLib {
         sendPacket(packetMessage);
 
         if(showReceived) {
-            FormMain.instance.getChatTab(message.context).messageReceived(message);
+            FormMain.instance.getChatTab(message).messageReceived(message);
         }
     }
 

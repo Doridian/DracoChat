@@ -1,12 +1,15 @@
 package me.draconia.chat.client.gui;
 
 import me.draconia.chat.ChatLib;
-import me.draconia.chat.client.*;
+import me.draconia.chat.client.ClientLib;
+import me.draconia.chat.client.ClientPacketHandler;
+import me.draconia.chat.client.ClientTrustManagerFactory;
 import me.draconia.chat.client.types.ClientChannel;
 import me.draconia.chat.client.types.ClientChannelFactory;
 import me.draconia.chat.client.types.ClientUserFactory;
 import me.draconia.chat.net.packets.Packet;
 import me.draconia.chat.types.GenericContext;
+import me.draconia.chat.types.Message;
 import me.draconia.chat.types.MessageContext;
 import me.draconia.chat.types.User;
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -98,7 +101,9 @@ public class FormMain {
         //Refresh tab for user/channel, if present
         ChatTab contextChatTab = getChatTabNoCreate(messageContext);
         if(contextChatTab != null) {
-            chatTabs.setTitleAt(chatTabs.indexOfTabComponent(contextChatTab.chatTabPanel), messageContext.getContextName());
+            final int index = chatTabs.indexOfTabComponent(contextChatTab.chatTabPanel);
+            if(index >= 0)
+                chatTabs.setTitleAt(index, messageContext.getContextName());
         }
 
         if(messageContext instanceof User) {
@@ -114,6 +119,10 @@ public class FormMain {
         synchronized (tabMap) {
             return tabMap.get(messageContext);
         }
+    }
+
+    public ChatTab getChatTab(Message message) {
+        return getChatTab(message.context.equals(ClientLib.myUser) ? message.from : message.context);
     }
 
     public ChatTab getChatTab(MessageContext messageContext) {

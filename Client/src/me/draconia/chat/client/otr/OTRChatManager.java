@@ -1,11 +1,12 @@
 package me.draconia.chat.client.otr;
 
 import me.draconia.chat.client.ClientLib;
-import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.client.gui.FormMain;
+import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.types.BinaryMessage;
 import me.draconia.chat.types.Message;
 import me.draconia.chat.types.TextMessage;
+import org.bouncycastle.jce.spec.IEKeySpec;
 
 import javax.crypto.Cipher;
 import java.security.KeyFactory;
@@ -56,23 +57,23 @@ public class OTRChatManager {
         binaryMessage.type = BinaryMessage.TYPE_OTR_MESSGAE;
 
         try {
-            Cipher encryptionCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", OTRKeyGen.provider);
-            encryptionCipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            OTRECIES encryptionCipher = new OTRECIES();
+            IEKeySpec ieKeySpec = new IEKeySpec(OTRKeyGen.otrPrivateKey, publicKey);
+            encryptionCipher.init(Cipher.ENCRYPT_MODE, ieKeySpec, OTRKeyGen.iesParameterSpec);
             byte messageClass = (message instanceof TextMessage) ? (byte)0 : (byte)1;
             encryptionCipher.update(new byte[] { messageClass, message.type });
             if(messageClass == 0) {
-                encryptionCipher.update(((TextMessage)message).content.getBytes("UTF-8"));
+                binaryMessage.content = encryptionCipher.doFinal(((TextMessage)message).content.getBytes("UTF-8"));
             } else {
-                encryptionCipher.update(((BinaryMessage)message).content);
+                binaryMessage.content = encryptionCipher.doFinal(((BinaryMessage)message).content);
             }
-            binaryMessage.content = encryptionCipher.doFinal();
         } catch(Exception e) {
             e.printStackTrace();
             throw new Error("ERROR");
         }
 
         ClientLib.sendMessage(binaryMessage, false);
-        FormMain.instance.getChatTab(message.context).messageReceived(message);
+        FormMain.instance.getChatTab(message).messageReceived(message);
     }
 
     public static void messageReceived(BinaryMessage binaryMessage) {
@@ -90,12 +91,13 @@ public class OTRChatManager {
                     if(Arrays.equals(oldKey.getEncoded(), binaryMessage.content)) return;
                 }
                 try {
-                    PublicKey newKey = KeyFactory.getInstance("RSA", OTRKeyGen.provider).generatePublic(new X509EncodedKeySpec(binaryMessage.content));
+                    PublicKey newKey = KeyFactory.getInstance("EC", OTRKeyGen.provider).generatePublic(new X509EncodedKeySpec(binaryMessage.content));
                     FormMain.instance.getChatTab(from).addText("[OTR] Your PublicKey is " + OTRKeyGen.getFingerprint(OTRKeyGen.otrPublicKey));
                     FormMain.instance.getChatTab(from).addText("[OTR] Partner PublicKey is " + OTRKeyGen.getFingerprint(newKey));
                     userKeys.put(from, newKey);
                 } catch(Exception e) {
                     e.printStackTrace();
+                    return;
                 }
                 Queue<Message> messages = messageQueue.remove(from);
                 if(messages != null) {
@@ -107,11 +109,11 @@ public class OTRChatManager {
 
             case BinaryMessage.TYPE_OTR_MESSGAE:
                 try {
-                    Cipher decryptionCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", OTRKeyGen.provider);
-                    decryptionCipher.init(Cipher.DECRYPT_MODE, OTRKeyGen.otrPrivateKey);
-                    decryptionCipher.update(binaryMessage.content);
+                    OTRECIES decryptionCipher = new OTRECIES();
+                    IEKeySpec ieKeySpec = new IEKeySpec(OTRKeyGen.otrPrivateKey, userKeys.get(binaryMessage.from));
+                    decryptionCipher.init(Cipher.DECRYPT_MODE, ieKeySpec, OTRKeyGen.iesParameterSpec);
                     Message message;
-                    byte[] payload = decryptionCipher.doFinal();
+                    byte[] payload = decryptionCipher.doFinal(binaryMessage.content);
                     final byte msgType = payload[1];
                     final byte msgClass = payload[0];
                     payload = Arrays.copyOfRange(payload, 2, payload.length);
@@ -140,7 +142,7 @@ public class OTRChatManager {
                     message.context = binaryMessage.context;
                     message.from = binaryMessage.from;
                     message.encrypted = true;
-                    FormMain.instance.getChatTab(message.context).messageReceived(message);
+                    FormMain.instance.getChatTab(message).messageReceived(message);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
