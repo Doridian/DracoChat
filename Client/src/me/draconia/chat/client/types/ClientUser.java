@@ -6,12 +6,6 @@ import me.draconia.chat.types.User;
 public class ClientUser extends User {
     ClientUser(String login) {
         super(login);
-        System.out.println("C: " + login);
-        try {
-            throw new RuntimeException("");
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
