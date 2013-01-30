@@ -1,10 +1,11 @@
-package me.draconia.chat.client;
+package me.draconia.chat.client.types;
 
+import me.draconia.chat.client.ClientLib;
 import me.draconia.chat.net.packets.PacketChannelAction;
 import me.draconia.chat.types.Channel;
 
 public class ClientChannel extends Channel {
-    public ClientChannel(String name) {
+    ClientChannel(String name) {
         super(name);
     }
 

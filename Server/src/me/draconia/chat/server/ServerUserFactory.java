@@ -9,7 +9,7 @@ public class ServerUserFactory extends UserFactory {
     private HashMap<String, User> userMap = new HashMap<String, User>();
 
     @Override
-    public User createFromLogin(String login) {
+    protected User createFromLogin(String login) {
         User ret = userMap.get(login);
         if(ret != null)
             return ret;

@@ -1,4 +1,4 @@
-package me.draconia.chat.client;
+package me.draconia.chat.client.types;
 
 import me.draconia.chat.types.Channel;
 import me.draconia.chat.types.ChannelFactory;

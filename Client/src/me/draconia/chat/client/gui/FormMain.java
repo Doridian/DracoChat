@@ -2,6 +2,9 @@ package me.draconia.chat.client.gui;
 
 import me.draconia.chat.ChatLib;
 import me.draconia.chat.client.*;
+import me.draconia.chat.client.types.ClientChannel;
+import me.draconia.chat.client.types.ClientChannelFactory;
+import me.draconia.chat.client.types.ClientUserFactory;
 import me.draconia.chat.net.packets.Packet;
 import me.draconia.chat.types.GenericContext;
 import me.draconia.chat.types.MessageContext;
@@ -12,8 +15,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import javax.net.ssl.SSLContext;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.HashMap;
@@ -99,23 +100,29 @@ public class FormMain {
     }
 
     private ChatTab getChatTabNoCreate(MessageContext messageContext) {
-        return tabMap.get(messageContext);
+        synchronized (tabMap) {
+            return tabMap.get(messageContext);
+        }
     }
 
     public ChatTab getChatTab(MessageContext messageContext) {
-        ChatTab chatTab = getChatTabNoCreate(messageContext);
-        if(chatTab == null) {
-            chatTab = new ChatTab(messageContext);
-            chatTabs.addTab(messageContext.getContextName(), chatTab.chatTabPanel);
-            tabMap.put(messageContext, chatTab);
+        synchronized (tabMap) {
+            ChatTab chatTab = getChatTabNoCreate(messageContext);
+            if(chatTab == null) {
+                chatTab = new ChatTab(messageContext);
+                chatTabs.addTab(messageContext.getContextName(), chatTab.chatTabPanel);
+                tabMap.put(messageContext, chatTab);
+            }
+            return chatTab;
         }
-        return chatTab;
     }
 
     public void removeChatTab(MessageContext messageContext) {
-        ChatTab chatTab = tabMap.remove(messageContext);
-        if(chatTab != null) {
-            chatTabs.remove(chatTab.chatTabPanel);
+        synchronized (tabMap) {
+            ChatTab chatTab = tabMap.remove(messageContext);
+            if(chatTab != null) {
+                chatTabs.remove(chatTab.chatTabPanel);
+            }
         }
     }
 

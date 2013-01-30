@@ -3,6 +3,7 @@ package me.draconia.chat.client;
 import me.draconia.chat.client.gui.ChatTab;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.otr.OTRChatManager;
+import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.net.PacketHandler;
 import me.draconia.chat.net.Packets;
 import me.draconia.chat.net.packets.*;

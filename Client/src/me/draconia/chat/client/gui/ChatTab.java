@@ -1,8 +1,7 @@
 package me.draconia.chat.client.gui;
 
 import me.draconia.chat.client.ClientLib;
-import me.draconia.chat.client.ClientUser;
-import me.draconia.chat.client.otr.OTRChatManager;
+import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.commands.BaseClientCommand;
 import me.draconia.chat.net.packets.PacketNickgetRequest;
 import me.draconia.chat.types.*;
@@ -72,7 +71,6 @@ public class ChatTab {
         message.type = TextMessage.TYPE_CHAT;
         message.context = relatedContext;
         ClientLib.sendEncryptableMessage(message);
-        messageReceived(message);
     }
 
     public void messageReceived(Message message) {

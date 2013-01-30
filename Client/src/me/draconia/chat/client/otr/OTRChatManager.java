@@ -1,7 +1,7 @@
 package me.draconia.chat.client.otr;
 
 import me.draconia.chat.client.ClientLib;
-import me.draconia.chat.client.ClientUser;
+import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.types.BinaryMessage;
 import me.draconia.chat.types.Message;
@@ -71,7 +71,8 @@ public class OTRChatManager {
             throw new Error("ERROR");
         }
 
-        ClientLib.sendMessage(binaryMessage);
+        ClientLib.sendMessage(binaryMessage, false);
+        FormMain.instance.getChatTab(message.context).messageReceived(message);
     }
 
     public static void messageReceived(BinaryMessage binaryMessage) {

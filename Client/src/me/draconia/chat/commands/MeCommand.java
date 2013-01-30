@@ -15,6 +15,5 @@ public class MeCommand extends BaseClientCommand {
         message.type = TextMessage.TYPE_ACTION;
         message.context = messageContext;
         ClientLib.sendEncryptableMessage(message);
-        FormMain.instance.getChatTab(messageContext).messageReceived(message);
     }
 }

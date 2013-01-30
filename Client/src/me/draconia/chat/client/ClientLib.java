@@ -3,12 +3,11 @@ package me.draconia.chat.client;
 import me.draconia.chat.ChatLib;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.otr.OTRChatManager;
+import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.net.packets.Packet;
 import me.draconia.chat.net.packets.PacketLoginRequest;
 import me.draconia.chat.net.packets.PacketMessageToServer;
 import me.draconia.chat.types.Message;
-import me.draconia.chat.types.MessageContext;
-import me.draconia.chat.types.TextMessage;
 import org.jboss.netty.channel.Channel;
 
 import java.net.InetSocketAddress;
@@ -35,15 +34,6 @@ public class ClientLib {
 
     public static ClientUser myUser;
 
-    public static void sendMessage(MessageContext messageContext, byte type, String message) {
-        TextMessage msg = new TextMessage();
-        msg.context = messageContext;
-        msg.content = message;
-        msg.type = type;
-        msg.from = myUser;
-        sendEncryptableMessage(msg);
-    }
-
     public static void sendEncryptableMessage(Message message) {
         message.from = ClientLib.myUser;
         if(message.context instanceof ClientUser && (ALWAYS_OTR || OTRChatManager.isOTR((ClientUser)message.context))) {
@@ -55,11 +45,19 @@ public class ClientLib {
     }
 
     public static void sendMessage(Message message) {
-        message.from = myUser;
+        sendMessage(message, true);
+    }
 
+    public static void sendMessage(Message message, boolean showReceived) {
+        message.from = myUser;
         PacketMessageToServer packetMessage = new PacketMessageToServer();
         packetMessage.message = message;
+
         sendPacket(packetMessage);
+
+        if(showReceived) {
+            FormMain.instance.getChatTab(message.context).messageReceived(message);
+        }
     }
 
     public static void login() {
