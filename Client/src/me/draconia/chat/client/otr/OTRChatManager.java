@@ -1,6 +1,7 @@
 package me.draconia.chat.client.otr;
 
 import me.draconia.chat.client.ClientLib;
+import me.draconia.chat.client.gui.ChatTab;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.types.BinaryMessage;
@@ -92,9 +93,16 @@ public class OTRChatManager {
                 }
                 try {
                     PublicKey newKey = KeyFactory.getInstance("EC", OTRKeyGen.provider).generatePublic(new X509EncodedKeySpec(binaryMessage.content));
-                    FormMain.instance.getChatTab(from).addText("[OTR] Your PublicKey is " + OTRKeyGen.getFingerprint(OTRKeyGen.otrPublicKey));
-                    FormMain.instance.getChatTab(from).addText("[OTR] Partner PublicKey is " + OTRKeyGen.getFingerprint(newKey));
+                    final ChatTab chatTab = FormMain.instance.getChatTab(from);
+                    chatTab.addText("[OTR] Your PublicKey is " + OTRKeyGen.getFingerprint(OTRKeyGen.otrPublicKey));
+                    chatTab.addText("[OTR] Partner PublicKey is " + OTRKeyGen.getFingerprint(newKey));
                     userKeys.put(from, newKey);
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            chatTab.disableChatEntryFor(5000);
+                        }
+                    }.start();
                 } catch(Exception e) {
                     e.printStackTrace();
                     return;

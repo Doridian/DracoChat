@@ -221,4 +221,34 @@ public class ChatTab {
     public void userNicknameChanged(User clientUser) {
         userListDataModel.userNicknameChanged(clientUser);
     }
+
+    private ChatTabEntryDisabledThread chatTabEntryDisabledThread = null;
+    private class ChatTabEntryDisabledThread extends Thread {
+        private boolean enabled = true;
+        private final int timeout;
+
+        private ChatTabEntryDisabledThread(int timeout) {
+            this.timeout = timeout;
+        }
+
+        @Override
+        public void run() {
+            chatEntry.setEnabled(false);
+            sendButton.setEnabled(false);
+            try {
+                Thread.sleep(timeout);
+            } catch(InterruptedException e) { }
+            if(!enabled) return;
+            chatEntry.setEnabled(true);
+            sendButton.setEnabled(true);
+        }
+    }
+    public void disableChatEntryFor(int millis) {
+        if(millis <= 0) return;
+        if(chatTabEntryDisabledThread != null) {
+            chatTabEntryDisabledThread.enabled = false;
+        }
+        chatTabEntryDisabledThread = new ChatTabEntryDisabledThread(millis);
+        chatTabEntryDisabledThread.start();
+    }
 }
