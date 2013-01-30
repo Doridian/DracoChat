@@ -42,7 +42,9 @@
             <preferred-size width="200" height="200"/>
           </grid>
         </constraints>
-        <properties/>
+        <properties>
+          <continuousLayout value="false"/>
+        </properties>
         <border type="none"/>
         <children>
           <component id="7fcbb" class="javax.swing.JList" binding="userList">

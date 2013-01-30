@@ -8,6 +8,7 @@ import me.draconia.chat.client.types.ClientUserFactory;
 import me.draconia.chat.net.packets.Packet;
 import me.draconia.chat.types.GenericContext;
 import me.draconia.chat.types.MessageContext;
+import me.draconia.chat.types.User;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -93,10 +94,20 @@ public class FormMain {
 
     private final HashMap<MessageContext, ChatTab> tabMap = new HashMap<MessageContext, ChatTab>();
 
-    public void refreshTabTitle(MessageContext messageContext) {
-        ChatTab chatTab = getChatTabNoCreate(messageContext);
-        if(chatTab == null) return;
-        chatTabs.setTitleAt(chatTabs.indexOfTabComponent(chatTab.chatTabPanel), messageContext.getContextName());
+    public void refreshClientUserNickname(MessageContext messageContext) {
+        //Refresh tab for user/channel, if present
+        ChatTab contextChatTab = getChatTabNoCreate(messageContext);
+        if(contextChatTab != null) {
+            chatTabs.setTitleAt(chatTabs.indexOfTabComponent(contextChatTab.chatTabPanel), messageContext.getContextName());
+        }
+
+        if(messageContext instanceof User) {
+            final User userContext = (User)messageContext;
+            //Refresh user in all lists, if present
+            for(ChatTab chatTab : tabMap.values()) {
+                chatTab.userNicknameChanged(userContext);
+            }
+        }
     }
 
     private ChatTab getChatTabNoCreate(MessageContext messageContext) {

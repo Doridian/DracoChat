@@ -11,6 +11,6 @@ public class ClientUser extends User {
     @Override
     public void setNickname(String nickname) {
         super.setNickname(nickname);
-        FormMain.instance.refreshTabTitle(this);
+        FormMain.instance.refreshClientUserNickname(this);
     }
 }

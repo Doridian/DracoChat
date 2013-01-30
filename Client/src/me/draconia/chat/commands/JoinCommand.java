@@ -5,6 +5,7 @@ import me.draconia.chat.types.ChannelFactory;
 import me.draconia.chat.types.MessageContext;
 import me.draconia.chat.types.User;
 
+@BaseCommand.Names("join")
 public class JoinCommand extends BaseClientCommand {
     @Override
     public void run(User user, MessageContext messageContext, String[] args, String argStr) throws Exception {

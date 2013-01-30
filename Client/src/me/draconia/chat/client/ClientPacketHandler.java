@@ -44,17 +44,32 @@ public class ClientPacketHandler extends PacketHandler {
                 break;
             case Packets.CHANNEL_ACTION:
                 PacketChannelAction packetChannelAction = (PacketChannelAction)packet;
-                switch (packetChannelAction.action) {
-                    case PacketChannelAction.ACTION_JOIN:
-                        FormMain.instance.getChatTab(packetChannelAction.channel);
-                        break;
-                    case PacketChannelAction.ACTION_LEAVE:
-                        FormMain.instance.removeChatTab(packetChannelAction.channel);
-                        break;
-                    case PacketChannelAction.ACTION_JOIN_DECLINED:
-                        FormMain.instance.removeChatTab(packetChannelAction.channel);
-                        break;
+                if(packetChannelAction.user.equals(ClientLib.myUser)) {
+                    switch (packetChannelAction.action) {
+                        case PacketChannelAction.ACTION_JOIN:
+                            FormMain.instance.getChatTab(packetChannelAction.channel);
+                            break;
+                        case PacketChannelAction.ACTION_LEAVE:
+                            FormMain.instance.removeChatTab(packetChannelAction.channel);
+                            break;
+                        case PacketChannelAction.ACTION_JOIN_DECLINED:
+                            FormMain.instance.removeChatTab(packetChannelAction.channel);
+                            break;
+                    }
+                } else {
+                    switch (packetChannelAction.action) {
+                        case PacketChannelAction.ACTION_JOIN:
+                            FormMain.instance.getChatTab(packetChannelAction.channel).addUserToList(packetChannelAction.user);
+                            break;
+                        case PacketChannelAction.ACTION_LEAVE:
+                            FormMain.instance.getChatTab(packetChannelAction.channel).removeUserFromList(packetChannelAction.user);
+                            break;
+                    }
                 }
+                break;
+            case Packets.CHANNEL_USER_SNAPSHOT:
+                PacketChannelUserSnapshotResponse packetChannelUserSnapshotResponse = (PacketChannelUserSnapshotResponse)packet;
+                FormMain.instance.getChatTab(packetChannelUserSnapshotResponse.channel).setUserList(packetChannelUserSnapshotResponse.users);
                 break;
             case Packets.LOGIN:
                 PacketLoginResponse packetLoginResponse = (PacketLoginResponse)packet;

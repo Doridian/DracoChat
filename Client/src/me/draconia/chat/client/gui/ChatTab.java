@@ -7,10 +7,16 @@ import me.draconia.chat.net.packets.PacketNickgetRequest;
 import me.draconia.chat.types.*;
 
 import javax.swing.*;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class ChatTab {
     private JTextPane chatLog;
@@ -56,6 +62,9 @@ public class ChatTab {
                 ClientLib.sendPacket(packetNickgetRequest);
             }
         }
+
+        userListDataModel = new UserListDataModel();
+        userList.setModel(userListDataModel);
     }
 
     private void sendChat() {
@@ -102,5 +111,114 @@ public class ChatTab {
                 chatLogScrollPane.getVerticalScrollBar().setValue(chatLogScrollPane.getVerticalScrollBar().getMaximum());
             }
         });
+    }
+
+    private class UserListDataModel implements ListModel<String> {
+        private final HashSet<ListDataListener> listDataListeners = new HashSet<ListDataListener>();
+        private final ArrayList<User> contents = new ArrayList<User>();
+        private final HashMap<User, Integer> contentIndexes = new HashMap<User, Integer>();
+
+        protected UserListDataModel(User[] users) {
+            int i = 0;
+            for(User clientUser : users) {
+                contents.add(clientUser);
+                contentIndexes.put(clientUser, i);
+                i++;
+            }
+        }
+
+        protected UserListDataModel(Collection<User> users) {
+            int i = 0;
+            for(User clientUser : users) {
+                contents.add(clientUser);
+                contentIndexes.put(clientUser, i);
+                i++;
+            }
+        }
+
+        protected UserListDataModel() {
+
+        }
+
+        @Override
+        public int getSize() {
+            return contents.size();
+        }
+
+        @Override
+        public String getElementAt(int index) {
+            return contents.get(index).getContextName();
+        }
+
+        @Override
+        public void addListDataListener(ListDataListener l) {
+            listDataListeners.add(l);
+        }
+
+        @Override
+        public void removeListDataListener(ListDataListener l) {
+            listDataListeners.remove(l);
+        }
+
+        protected void userNicknameChanged(User clientUser) {
+            final Integer index = contentIndexes.get(clientUser);
+            if(index == null) return;
+            final ListDataEvent listDataEvent = new ListDataEvent(this, ListDataEvent.CONTENTS_CHANGED, index, index);
+            for(ListDataListener l : listDataListeners) {
+                l.contentsChanged(listDataEvent);
+            }
+        }
+
+        protected void addUser(User clientUser) {
+            final int newIndex;
+            synchronized (contents) {
+                newIndex = contents.size();
+                contents.add(clientUser);
+                contentIndexes.put(clientUser, newIndex);
+            }
+            final ListDataEvent listDataEvent = new ListDataEvent(this, ListDataEvent.INTERVAL_ADDED, newIndex, newIndex);
+            for(ListDataListener l : listDataListeners) {
+                l.intervalAdded(listDataEvent);
+            }
+        }
+
+        protected void delUser(User clientUser) {
+            final int oldIndex;
+            synchronized (contents) {
+                oldIndex = contentIndexes.remove(clientUser);
+                contents.remove(oldIndex);
+                for(int i = oldIndex; i < contents.size(); i++) {
+                    contentIndexes.put(contents.get(i), i);
+                }
+            }
+            final ListDataEvent listDataEvent = new ListDataEvent(this, ListDataEvent.INTERVAL_ADDED, oldIndex, oldIndex);
+            for(ListDataListener l : listDataListeners) {
+                l.intervalRemoved(listDataEvent);
+            }
+        }
+    }
+
+    private UserListDataModel userListDataModel;
+
+    public void addUserToList(User clientUser) {
+        userListDataModel.addUser(clientUser);
+    }
+
+    public void removeUserFromList(User clientUser) {
+        userListDataModel.delUser(clientUser);
+    }
+
+    public void setUserList(Collection<User> clientUsers) {
+        userListDataModel = new UserListDataModel(clientUsers);
+        userList.setModel(userListDataModel);
+    }
+
+    public void setUserList(User[] clientUsers) {
+        userListDataModel = new UserListDataModel(clientUsers);
+        userList.setModel(userListDataModel);
+    }
+
+    public void userNicknameChanged(User clientUser) {
+        userListDataModel.userNicknameChanged(clientUser);
     }
 }

@@ -15,7 +15,7 @@ public class PacketChannelUserSnapshotResponse extends Packet {
 
     @Override
     protected void decode(ChannelBuffer channelBuffer) {
-        writeString(channelBuffer, channel.name);
+        channel = ChannelFactory.instance.createFromName(readString(channelBuffer));
         byte count = channelBuffer.readByte();
         users = new User[count];
         for(byte i=0;i<count;i++) {
@@ -25,7 +25,7 @@ public class PacketChannelUserSnapshotResponse extends Packet {
 
     @Override
     protected void encode(ChannelBuffer channelBuffer) {
-        channel = ChannelFactory.instance.createFromName(readString(channelBuffer));
+        writeString(channelBuffer, channel.name);
         byte count = (byte)users.length;
         channelBuffer.writeByte(count);
         for(byte i=0;i<count;i++) {
