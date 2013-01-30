@@ -52,8 +52,6 @@ public abstract class BaseCommand {
             argLine = "";
             args = new String[0];
         }
-        System.out.println(cmdLine);
-        System.out.println(argLine);
         BaseCommand baseCommand = commands.get(cmdLine.toLowerCase());
         if(baseCommand == null) return false;
         try {
