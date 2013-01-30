@@ -96,6 +96,7 @@ public class OTRChatManager {
                     final ChatTab chatTab = FormMain.instance.getChatTab(from);
                     chatTab.addText("[OTR] Your PublicKey is " + OTRKeyGen.getFingerprint(OTRKeyGen.otrPublicKey));
                     chatTab.addText("[OTR] Partner PublicKey is " + OTRKeyGen.getFingerprint(newKey));
+                    chatTab.addText("[OTR] PLEASE VERIFY THIS KEY WITH EXTERNAL MEANS BEFORE PROCEEDING YOUR CHAT");
                     userKeys.put(from, newKey);
                     new Thread() {
                         @Override
