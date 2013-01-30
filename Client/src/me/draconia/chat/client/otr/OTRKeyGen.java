@@ -23,7 +23,7 @@ public class OTRKeyGen {
     static PublicKey otrPublicKey;
 
     public static final ECParameterSpec ecParameterSpec = ECNamedCurveTable.getParameterSpec("secp521r1");
-    public static final IESParameterSpec iesParameterSpec = new IESParameterSpec(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new byte[] { 8, 7, 6, 5, 4, 3, 2, 1 }, 128);
+    //public static final IESParameterSpec iesParameterSpec = new IESParameterSpec(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new byte[] { 8, 7, 6, 5, 4, 3, 2, 1 }, 128);
 
     private static final byte[] SALT = { 11, 38, 58, 18, 58, 18, 125, -110 };
     private static final int ITERATIONS = 64;

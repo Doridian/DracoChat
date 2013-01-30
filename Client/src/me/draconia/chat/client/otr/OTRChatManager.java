@@ -8,10 +8,12 @@ import me.draconia.chat.types.BinaryMessage;
 import me.draconia.chat.types.Message;
 import me.draconia.chat.types.TextMessage;
 import org.bouncycastle.jce.spec.IEKeySpec;
+import org.bouncycastle.jce.spec.IESParameterSpec;
 
 import javax.crypto.Cipher;
 import java.security.KeyFactory;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -19,9 +21,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class OTRChatManager {
-    private static HashMap<ClientUser, PublicKey> userKeys = new HashMap<ClientUser, PublicKey>();
+    private final static HashMap<ClientUser, PublicKey> userKeys = new HashMap<ClientUser, PublicKey>();
 
-    private static HashMap<ClientUser, Queue<Message>> messageQueue = new HashMap<ClientUser, Queue<Message>>();
+    private final static HashMap<ClientUser, Queue<Message>> outgoingMessageQueue = new HashMap<ClientUser, Queue<Message>>();
+    private final static HashMap<ClientUser, Queue<BinaryMessage>> incomingMessageQueue = new HashMap<ClientUser, Queue<BinaryMessage>>();
+
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     public static void initWith(ClientUser clientUser) {
         BinaryMessage binaryMessage = new BinaryMessage();
@@ -43,10 +48,10 @@ public class OTRChatManager {
         ClientUser clientUser = (ClientUser)message.context;
         PublicKey publicKey = userKeys.get(clientUser);
         if(publicKey == null) {
-            Queue<Message> messages = messageQueue.get(clientUser);
+            Queue<Message> messages = outgoingMessageQueue.get(clientUser);
             if(messages == null) {
                 messages = new ConcurrentLinkedQueue<Message>();
-                messageQueue.put(clientUser, messages);
+                outgoingMessageQueue.put(clientUser, messages);
             }
             messages.add(message);
             initWith(clientUser);
@@ -58,16 +63,29 @@ public class OTRChatManager {
         binaryMessage.type = BinaryMessage.TYPE_OTR_MESSGAE;
 
         try {
+            final byte[] d = new byte[16];
+            final byte[] e = new byte[16];
+            secureRandom.nextBytes(d);
+            secureRandom.nextBytes(e);
+            final IESParameterSpec iesParameterSpec = new IESParameterSpec(d, e, 128);
+
             OTRECIES encryptionCipher = new OTRECIES();
             IEKeySpec ieKeySpec = new IEKeySpec(OTRKeyGen.otrPrivateKey, publicKey);
-            encryptionCipher.init(Cipher.ENCRYPT_MODE, ieKeySpec, OTRKeyGen.iesParameterSpec);
+            encryptionCipher.init(Cipher.ENCRYPT_MODE, ieKeySpec, iesParameterSpec);
             byte messageClass = (message instanceof TextMessage) ? (byte)0 : (byte)1;
+
             encryptionCipher.update(new byte[] { messageClass, message.type });
+
+            final byte[] encryptedContent;
             if(messageClass == 0) {
-                binaryMessage.content = encryptionCipher.doFinal(((TextMessage)message).content.getBytes("UTF-8"));
+                encryptedContent = encryptionCipher.doFinal(((TextMessage)message).content.getBytes("UTF-8"));
             } else {
-                binaryMessage.content = encryptionCipher.doFinal(((BinaryMessage)message).content);
+                encryptedContent = encryptionCipher.doFinal(((BinaryMessage)message).content);
             }
+            binaryMessage.content = new byte[encryptedContent.length + 32];
+            System.arraycopy(d, 0, binaryMessage.content, 0, 16);
+            System.arraycopy(e, 0, binaryMessage.content, 16, 16);
+            System.arraycopy(encryptedContent, 0, binaryMessage.content, 32, encryptedContent.length);
         } catch(Exception e) {
             e.printStackTrace();
             throw new Error("ERROR");
@@ -103,54 +121,87 @@ public class OTRChatManager {
                     e.printStackTrace();
                     return;
                 }
-                Queue<Message> messages = messageQueue.remove(from);
+                Queue<Message> messages = outgoingMessageQueue.remove(from);
                 if(messages != null) {
                     for(Message message : messages) {
                         sendMessage(message);
+                    }
+                }
+                Queue<BinaryMessage> binaryMessages = incomingMessageQueue.remove(from);
+                if(binaryMessages != null) {
+                    PublicKey publicKey = userKeys.get(from);
+                    for(BinaryMessage message : binaryMessages) {
+                        receivedMessage(publicKey, message);
                     }
                 }
                 break;
 
             case BinaryMessage.TYPE_OTR_MESSGAE:
                 try {
-                    OTRECIES decryptionCipher = new OTRECIES();
-                    IEKeySpec ieKeySpec = new IEKeySpec(OTRKeyGen.otrPrivateKey, userKeys.get(binaryMessage.from));
-                    decryptionCipher.init(Cipher.DECRYPT_MODE, ieKeySpec, OTRKeyGen.iesParameterSpec);
-                    Message message;
-                    byte[] payload = decryptionCipher.doFinal(binaryMessage.content);
-                    final byte msgType = payload[1];
-                    final byte msgClass = payload[0];
-                    payload = Arrays.copyOfRange(payload, 2, payload.length);
-                    switch (msgClass) {
-                        case 0:
-                            TextMessage textMessage = new TextMessage();
-                            textMessage.content = new String(payload, "UTF-8");
-                            message = textMessage;
-                            if(msgType == TextMessage.TYPE_SYSTEM || msgType == TextMessage.TYPE_SYSTEM_ERROR) {
-                                return;
-                            }
-                            break;
-                        case 1:
-                            BinaryMessage decodedBinaryMessage = new BinaryMessage();
-                            decodedBinaryMessage.content = payload;
-                            message = decodedBinaryMessage;
-                            if(msgType == BinaryMessage.TYPE_OTR_MESSGAE || msgType == BinaryMessage.TYPE_OTR_PUBKEY_1 || msgType == BinaryMessage.TYPE_OTR_PUBKEY_2) {
-                                return;
-                            }
-                            break;
-                        default:
-                            return;
+                    ClientUser clientUser = (ClientUser)binaryMessage.from;
+                    PublicKey publicKey = userKeys.get(clientUser);
+                    if(publicKey == null) {
+                        Queue<BinaryMessage> messageQueue = incomingMessageQueue.get(clientUser);
+                        if(messageQueue == null) {
+                            messageQueue = new ConcurrentLinkedQueue<BinaryMessage>();
+                            incomingMessageQueue.put(clientUser, messageQueue);
+                        }
+                        messageQueue.add(binaryMessage);
+                        initWith(clientUser);
+                        return;
+                    } else {
+                        receivedMessage(publicKey, binaryMessage);
                     }
-                    message.type = msgType;
-                    message.timestamp = binaryMessage.timestamp;
-                    message.context = binaryMessage.context;
-                    message.from = binaryMessage.from;
-                    message.encrypted = true;
-                    FormMain.instance.getChatTab(message).messageReceived(message);
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
                 break;
+        }
+    }
+
+    private static void receivedMessage(PublicKey publicKey, BinaryMessage binaryMessage) {
+        try {
+            OTRECIES decryptionCipher = new OTRECIES();
+
+            byte[] d = Arrays.copyOfRange(binaryMessage.content, 0, 16);
+            byte[] e = Arrays.copyOfRange(binaryMessage.content, 16, 32);
+            IESParameterSpec iesParameterSpec = new IESParameterSpec(d, e, 128);
+
+            IEKeySpec ieKeySpec = new IEKeySpec(OTRKeyGen.otrPrivateKey, publicKey);
+            decryptionCipher.init(Cipher.DECRYPT_MODE, ieKeySpec, iesParameterSpec);
+            Message message;
+            byte[] payload = decryptionCipher.doFinal(Arrays.copyOfRange(binaryMessage.content, 32, binaryMessage.content.length));
+            final byte msgType = payload[1];
+            final byte msgClass = payload[0];
+            payload = Arrays.copyOfRange(payload, 2, payload.length);
+            switch (msgClass) {
+                case 0:
+                    TextMessage textMessage = new TextMessage();
+                    textMessage.content = new String(payload, "UTF-8");
+                    message = textMessage;
+                    if(msgType == TextMessage.TYPE_SYSTEM || msgType == TextMessage.TYPE_SYSTEM_ERROR) {
+                        return;
+                    }
+                    break;
+                case 1:
+                    BinaryMessage decodedBinaryMessage = new BinaryMessage();
+                    decodedBinaryMessage.content = payload;
+                    message = decodedBinaryMessage;
+                    if(msgType == BinaryMessage.TYPE_OTR_MESSGAE || msgType == BinaryMessage.TYPE_OTR_PUBKEY_1 || msgType == BinaryMessage.TYPE_OTR_PUBKEY_2) {
+                        return;
+                    }
+                    break;
+                default:
+                    return;
+            }
+            message.type = msgType;
+            message.timestamp = binaryMessage.timestamp;
+            message.context = binaryMessage.context;
+            message.from = binaryMessage.from;
+            message.encrypted = true;
+            FormMain.instance.getChatTab(message).messageReceived(message);
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
 }
