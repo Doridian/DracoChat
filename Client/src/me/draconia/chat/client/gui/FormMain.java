@@ -6,8 +6,10 @@ import me.draconia.chat.client.ClientPacketHandler;
 import me.draconia.chat.client.ClientTrustManagerFactory;
 import me.draconia.chat.client.types.ClientChannel;
 import me.draconia.chat.client.types.ClientChannelFactory;
+import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.client.types.ClientUserFactory;
 import me.draconia.chat.net.packets.Packet;
+import me.draconia.chat.net.packets.PacketNickgetRequest;
 import me.draconia.chat.types.GenericContext;
 import me.draconia.chat.types.Message;
 import me.draconia.chat.types.MessageContext;
@@ -21,6 +23,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.Executors;
 
@@ -35,9 +38,43 @@ public class FormMain {
 
     private JFrame rootFrame;
 
+    private boolean runRefreshNicknamesThread = true;
+    private Thread refreshNicknamesThread;
+
     public FormMain() {
         instance = this;
         genericChatTab = getChatTab(GenericContext.instance);
+
+        refreshNicknamesThread = new Thread() {
+            @Override
+            public void run() {
+                while(runRefreshNicknamesThread) {
+                    try {
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) { }
+                    ArrayList<User> users = new ArrayList<User>();
+                    for(MessageContext messageContext : tabMap.keySet()) {
+                        if(messageContext instanceof User) {
+                            users.add((User)messageContext);
+                        }
+                    }
+                    PacketNickgetRequest packetNickgetRequest = new PacketNickgetRequest();
+                    packetNickgetRequest.users = users.toArray(new User[users.size()]);
+                    ClientLib.sendPacket(packetNickgetRequest);
+                }
+            }
+        };
+        refreshNicknamesThread.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                runRefreshNicknamesThread = false;
+                try {
+                    refreshNicknamesThread.join();
+                } catch (InterruptedException e) { }
+            }
+        });
     }
 
     public static void main(String[] args) {

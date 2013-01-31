@@ -5,7 +5,6 @@ import me.draconia.chat.client.gui.FormMain;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
-import org.bouncycastle.jce.spec.IESParameterSpec;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -26,7 +25,7 @@ public class OTRKeyGen {
     //public static final IESParameterSpec iesParameterSpec = new IESParameterSpec(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, new byte[] { 8, 7, 6, 5, 4, 3, 2, 1 }, 128);
 
     private static final byte[] SALT = { 11, 38, 58, 18, 58, 18, 125, -110 };
-    private static final int ITERATIONS = 64;
+    private static final int ITERATIONS = 19;
 
     static {
         provider = new BouncyCastleProvider();
@@ -38,10 +37,9 @@ public class OTRKeyGen {
         Key keyPairEncryptKey;
         PBEParameterSpec keyPairEncryptionParameters;
         try {
-            SecretKeyFactory kf = SecretKeyFactory.getInstance("PBEWithSHAAndTwofish-CBC", provider);
-            PBEKeySpec keySpec = new PBEKeySpec(ClientLib.getPassword().toCharArray());
-            keyPairEncryptKey = kf.generateSecret(keySpec);
-            keyPairEncryptCipher = Cipher.getInstance("PBEWithSHAAndTwofish-CBC", provider);
+            PBEKeySpec keySpec = new PBEKeySpec(ClientLib.getPassword().toCharArray(), SALT, ITERATIONS);
+            keyPairEncryptKey = SecretKeyFactory.getInstance("PBEWithMD5AndDES").generateSecret(keySpec);
+            keyPairEncryptCipher = Cipher.getInstance("PBEWithMD5AndDES");
             keyPairEncryptionParameters = new PBEParameterSpec(SALT, ITERATIONS);
         } catch (Exception e) {
             e.printStackTrace();
