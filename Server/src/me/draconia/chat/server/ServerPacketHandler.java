@@ -7,6 +7,7 @@ import me.draconia.chat.net.Packets;
 import me.draconia.chat.net.packets.*;
 import me.draconia.chat.types.Message;
 import me.draconia.chat.types.TextMessage;
+import me.draconia.chat.types.User;
 import me.draconia.chat.types.UserFactory;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.handler.ssl.SslHandler;
@@ -129,8 +130,18 @@ public class ServerPacketHandler extends PacketHandler {
                     } else {
                         currentUser.sendSystemError("Cannot send message to channel #" + serverChannel.name + " (you are not in that channel)");
                     }
-                } else if(packetMessageToClient.message.context instanceof ServerUser) {
-                    ((ServerUser) packetMessageToClient.message.context).sendPacket(packetMessageToClient);
+                } else if(message.context instanceof ServerUser) {
+                    boolean success = ((ServerUser) message.context).sendPacket(packetMessageToClient);
+                    if(!success) {
+                        packetMessageToClient = new PacketMessageToClient();
+                        TextMessage textMessage = new TextMessage();
+                        textMessage.context = message.context;
+                        textMessage.from = User.getSYSTEM();
+                        textMessage.content = "[ERR] User not online";
+                        textMessage.type = TextMessage.TYPE_SYSTEM_ERROR;
+                        packetMessageToClient.message = textMessage;
+                        currentUser.sendPacket(packetMessageToClient);
+                    }
                 } else {
                     //TODO: Handle this [chat commands and stuff]
                 }

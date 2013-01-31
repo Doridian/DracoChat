@@ -45,6 +45,7 @@ public class ServerUser extends User {
             }
             channels.clear();
         }
+        this.channel = null;
     }
 
     protected Channel getChannel() {
@@ -77,25 +78,28 @@ public class ServerUser extends User {
         return (this.password != null);
     }
 
-    public void sendPacket(Packet packet) {
+    public boolean sendPacket(Packet packet) {
+        if(channel == null) return false;
         channel.write(packet.getData());
+        return true;
     }
 
-    public void sendSystemMessage(String text) {
-        sendSystemMessage(text, TextMessage.TYPE_SYSTEM);
+    public boolean sendSystemMessage(String text) {
+        return sendSystemMessage(text, TextMessage.TYPE_SYSTEM);
     }
 
-    public void sendSystemError(String text) {
-        sendSystemMessage(text, TextMessage.TYPE_SYSTEM_ERROR);
+    public boolean sendSystemError(String text) {
+        return sendSystemMessage(text, TextMessage.TYPE_SYSTEM_ERROR);
     }
 
-    public void sendSystemMessage(String text, byte type) {
+    public boolean sendSystemMessage(String text, byte type) {
         TextMessage message = new TextMessage();
         message.content = text;
         message.type = type;
         message.context = GenericContext.instance;
+        message.from = User.getSYSTEM();
         PacketMessageToClient packetMessageToClient = new PacketMessageToClient();
         packetMessageToClient.message = message;
-        sendPacket(packetMessageToClient);
+        return sendPacket(packetMessageToClient);
     }
 }
