@@ -5,10 +5,13 @@ import me.draconia.chat.net.packets.PacketChannelUserSnapshotResponse;
 import me.draconia.chat.types.Channel;
 import me.draconia.chat.types.User;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ServerChannel extends Channel {
+public class ServerChannel extends Channel implements Serializable {
+    public static final long serialVersionUID = -1L;
+
     protected String password;
 
     private final HashSet<ServerUser> users = new HashSet<ServerUser>();

@@ -1,6 +1,10 @@
 package me.draconia.chat.types;
 
-public abstract class Channel implements MessageContext {
+import java.io.Serializable;
+
+public abstract class Channel implements MessageContext, Serializable {
+    public static final long serialVersionUID = -1L;
+
     public String name;
 
     protected Channel(String name) {

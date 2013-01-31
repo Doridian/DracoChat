@@ -6,7 +6,7 @@ import me.draconia.chat.types.UserFactory;
 import java.util.HashMap;
 
 public class ClientUserFactory extends UserFactory {
-    private HashMap<String, User> userMap = new HashMap<String, User>();
+    private final HashMap<String, User> userMap = new HashMap<String, User>();
 
     @Override
     protected User createFromLogin(String login) {

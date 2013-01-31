@@ -1,6 +1,10 @@
 package me.draconia.chat.types;
 
-public class User implements MessageContext {
+import java.io.Serializable;
+
+public class User implements MessageContext, Serializable {
+    public static final long serialVersionUID = -1L;
+
     public final String login;
     private String nickname;
     private String contextName;

@@ -6,7 +6,7 @@ import me.draconia.chat.types.ChannelFactory;
 import java.util.HashMap;
 
 public class ClientChannelFactory extends ChannelFactory {
-    private HashMap<String, Channel> channelsMap = new HashMap<String, Channel>();
+    private final HashMap<String, Channel> channelsMap = new HashMap<String, Channel>();
 
     @Override
     public Channel createFromName(String name) {

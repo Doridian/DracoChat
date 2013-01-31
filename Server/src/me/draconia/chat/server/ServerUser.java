@@ -11,11 +11,14 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
+import java.io.*;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashSet;
 
-public class ServerUser extends User {
+public class ServerUser extends User implements Serializable {
+    public static final long serialVersionUID = -1L;
+
     private byte[] password;
     private Channel channel;
 
