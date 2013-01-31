@@ -3,6 +3,7 @@ package me.draconia.chat.client;
 import me.draconia.chat.client.gui.ChatTab;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.otr.OTRChatManager;
+import me.draconia.chat.client.types.ClientChannel;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.net.PacketHandler;
 import me.draconia.chat.net.Packets;
@@ -60,17 +61,17 @@ public class ClientPacketHandler extends PacketHandler {
                 } else {
                     switch (packetChannelAction.action) {
                         case PacketChannelAction.ACTION_JOIN:
-                            FormMain.instance.getChatTab(packetChannelAction.channel).addUserToList(packetChannelAction.user);
+                            ((ClientChannel)packetChannelAction.channel).userJoined((ClientUser)packetChannelAction.user);
                             break;
                         case PacketChannelAction.ACTION_LEAVE:
-                            FormMain.instance.getChatTab(packetChannelAction.channel).removeUserFromList(packetChannelAction.user);
+                            ((ClientChannel)packetChannelAction.channel).userLeft((ClientUser)packetChannelAction.user);
                             break;
                     }
                 }
                 break;
             case Packets.CHANNEL_USER_SNAPSHOT:
                 PacketChannelUserSnapshotResponse packetChannelUserSnapshotResponse = (PacketChannelUserSnapshotResponse)packet;
-                FormMain.instance.getChatTab(packetChannelUserSnapshotResponse.channel).setUserList(packetChannelUserSnapshotResponse.users);
+                ((ClientChannel)packetChannelUserSnapshotResponse.channel).gotUserSnapshot(packetChannelUserSnapshotResponse.users);
                 break;
             case Packets.LOGIN:
                 PacketLoginResponse packetLoginResponse = (PacketLoginResponse)packet;
