@@ -9,6 +9,8 @@ import me.draconia.chat.net.packets.PacketLoginRequest;
 import me.draconia.chat.net.packets.PacketMessageToServer;
 import me.draconia.chat.types.Message;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 
 import java.net.InetSocketAddress;
 
@@ -62,7 +64,15 @@ public class ClientLib {
     }
 
     public static void login() {
-        FormMain.clientBootstrap.connect(myHost);
+        FormMain.clientBootstrap.connect(myHost).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                if((!channelFuture.getChannel().isConnected()) && channelFuture.getCause() != null) {
+                    FormMain.genericChatTab.addText("[NET] Connection error: " + channelFuture.getCause().getMessage());
+                    FormMain.instance.showLoginDialog();
+                }
+            }
+        });
     }
 
     protected static void sendLogin() {

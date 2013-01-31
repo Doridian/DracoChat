@@ -34,6 +34,14 @@ public class User implements MessageContext {
         }
     }
 
+    public String getDisplayName() {
+        if(this.nickname == null) {
+            return this.login;
+        } else {
+            return this.nickname;
+        }
+    }
+
     @Override
     public boolean equals(Object obj) {
         if(obj == null)

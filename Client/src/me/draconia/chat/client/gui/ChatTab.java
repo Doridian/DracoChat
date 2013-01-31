@@ -90,10 +90,13 @@ public class ChatTab {
             } else {
                 switch (textMessage.type) {
                     case TextMessage.TYPE_CHAT:
-                        addText(textMessage.from.getContextName() + ": " + textMessage.content);
+                        addText(textMessage.from.getDisplayName() + ": " + textMessage.content);
                         break;
                     case TextMessage.TYPE_ACTION:
-                        addText("* " + textMessage.from.getContextName() + " " + textMessage.content);
+                        addText("* " + textMessage.from.getDisplayName() + " " + textMessage.content);
+                        break;
+                    case TextMessage.TYPE_EVENT:
+                        addText("**" + textMessage.content + "** [" + textMessage.from.getContextName() + "]");
                         break;
                 }
             }
