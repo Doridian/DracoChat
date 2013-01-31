@@ -28,6 +28,11 @@ public class OTRChatManager {
 
     private static final SecureRandom secureRandom = new SecureRandom();
 
+    public static void clearQueuesFor(ClientUser clientUser) {
+        outgoingMessageQueue.remove(clientUser);
+        incomingMessageQueue.remove(clientUser);
+    }
+
     public static void initWith(ClientUser clientUser) {
         BinaryMessage binaryMessage = new BinaryMessage();
         binaryMessage.context = clientUser;
@@ -48,6 +53,8 @@ public class OTRChatManager {
         ClientUser clientUser = (ClientUser)message.context;
         PublicKey publicKey = userKeys.get(clientUser);
         if(publicKey == null) {
+            FormMain.instance.getChatTab(message.context).addText("[OTR] Trying to establish OTR session...");
+
             Queue<Message> messages = outgoingMessageQueue.get(clientUser);
             if(messages == null) {
                 messages = new ConcurrentLinkedQueue<Message>();
@@ -96,6 +103,10 @@ public class OTRChatManager {
     }
 
     public static void messageReceived(BinaryMessage binaryMessage) {
+        if(!(binaryMessage.context instanceof ClientUser)) {
+            return;
+        }
+
         switch (binaryMessage.type) {
             case BinaryMessage.TYPE_OTR_PUBKEY_1:
                 BinaryMessage responseMessage = new BinaryMessage();
@@ -112,6 +123,7 @@ public class OTRChatManager {
                 try {
                     PublicKey newKey = KeyFactory.getInstance("EC", OTRKeyGen.provider).generatePublic(new X509EncodedKeySpec(binaryMessage.content));
                     final ChatTab chatTab = FormMain.instance.getChatTab(from);
+                    chatTab.addText("[OTR] Session established");
                     chatTab.addText("[OTR] Your PublicKey is " + OTRKeyGen.getFingerprint(OTRKeyGen.otrPublicKey));
                     chatTab.addText("[OTR] Partner PublicKey is " + OTRKeyGen.getFingerprint(newKey));
                     chatTab.addText("[OTR] PLEASE VERIFY THIS KEY WITH EXTERNAL MEANS BEFORE PROCEEDING YOUR CHAT");
@@ -155,6 +167,11 @@ public class OTRChatManager {
                 } catch(Exception e) {
                     e.printStackTrace();
                 }
+                break;
+
+            case BinaryMessage.TYPE_OTR_ERROR:
+                clearQueuesFor((ClientUser)binaryMessage.context);
+                FormMain.instance.getChatTab(binaryMessage.context).addText("[OTR] Error");
                 break;
         }
     }

@@ -128,7 +128,7 @@ public class ClientPacketHandler extends PacketHandler {
                     chatTab.messageReceived(message);
                 } else if(message instanceof BinaryMessage) {
                     BinaryMessage binaryMessage = (BinaryMessage)message;
-                    if(binaryMessage.type == BinaryMessage.TYPE_OTR_MESSGAE || binaryMessage.type == BinaryMessage.TYPE_OTR_PUBKEY_1 || binaryMessage.type == BinaryMessage.TYPE_OTR_PUBKEY_2) {
+                    if(binaryMessage.type == BinaryMessage.TYPE_OTR_MESSGAE || binaryMessage.type == BinaryMessage.TYPE_OTR_PUBKEY_1 || binaryMessage.type == BinaryMessage.TYPE_OTR_PUBKEY_2 || binaryMessage.type == BinaryMessage.TYPE_OTR_ERROR) {
                         OTRChatManager.messageReceived(binaryMessage);
                     }
                 }

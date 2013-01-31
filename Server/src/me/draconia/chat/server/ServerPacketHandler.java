@@ -5,11 +5,9 @@ import me.draconia.chat.commands.BaseServerCommand;
 import me.draconia.chat.net.PacketHandler;
 import me.draconia.chat.net.Packets;
 import me.draconia.chat.net.packets.*;
-import me.draconia.chat.types.Message;
-import me.draconia.chat.types.TextMessage;
-import me.draconia.chat.types.User;
-import me.draconia.chat.types.UserFactory;
+import me.draconia.chat.types.*;
 import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.handler.ssl.SslHandler;
 
 import java.io.IOException;
@@ -135,12 +133,26 @@ public class ServerPacketHandler extends PacketHandler {
                     if(!success) {
                         packetMessageToClient = new PacketMessageToClient();
                         TextMessage textMessage = new TextMessage();
-                        textMessage.context = message.context;
-                        textMessage.from = User.getSYSTEM();
                         textMessage.content = "[ERR] User not online";
                         textMessage.type = TextMessage.TYPE_SYSTEM_ERROR;
+                        textMessage.context = message.context;
+                        textMessage.from = User.getSYSTEM();
                         packetMessageToClient.message = textMessage;
                         currentUser.sendPacket(packetMessageToClient);
+
+                        if(message instanceof BinaryMessage) {
+                            BinaryMessage originalBinaryMessage = (BinaryMessage)message;
+                            if(originalBinaryMessage.type == BinaryMessage.TYPE_OTR_MESSGAE || originalBinaryMessage.type == BinaryMessage.TYPE_OTR_PUBKEY_1 || originalBinaryMessage.type == BinaryMessage.TYPE_OTR_PUBKEY_2) {
+                                packetMessageToClient  = new PacketMessageToClient();
+                                BinaryMessage binaryMessage = new BinaryMessage();
+                                binaryMessage.type = BinaryMessage.TYPE_OTR_ERROR;
+                                binaryMessage.content = new byte[0];
+                                binaryMessage.context = message.context;
+                                binaryMessage.from = User.getSYSTEM();
+                                packetMessageToClient.message = binaryMessage;
+                                currentUser.sendPacket(packetMessageToClient);
+                            }
+                        }
                     }
                 } else {
                     //TODO: Handle this [chat commands and stuff]
