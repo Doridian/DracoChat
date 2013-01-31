@@ -5,6 +5,7 @@ import me.draconia.chat.client.ClientLib;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.net.InetSocketAddress;
 
 public class DialogLogin extends JDialog {
     private JPanel contentPane;
@@ -12,6 +13,7 @@ public class DialogLogin extends JDialog {
     private JButton buttonCancel;
     private JTextField textUsername;
     private JPasswordField textPassword;
+    private JTextField textHost;
 
     public DialogLogin(Frame owner) {
         super(owner, "DracoChat Login");
@@ -49,6 +51,15 @@ public class DialogLogin extends JDialog {
     }
 
     private void onOK() {
+        final String host = textHost.getText();
+        final InetSocketAddress inetSocketAddress;
+        final int colon = host.indexOf(':');
+        if(colon >= 0) {
+            inetSocketAddress = new InetSocketAddress(host.substring(0, colon), Integer.parseInt(host.substring(colon + 1)));
+        } else {
+            inetSocketAddress = new InetSocketAddress(host, 13137);
+        }
+        ClientLib.myHost = inetSocketAddress;
         ClientLib.myLogin = textUsername.getText();
         ClientLib.setPassword(new String(textPassword.getPassword()));
         ClientLib.login();

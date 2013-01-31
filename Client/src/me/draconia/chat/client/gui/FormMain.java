@@ -89,7 +89,7 @@ public class FormMain {
 
     public void showLoginDialog() {
         DialogLogin dialogLogin = new DialogLogin(FormMain.instance.rootFrame);
-        dialogLogin.setMinimumSize(new Dimension(300, 150));
+        dialogLogin.setMinimumSize(new Dimension(300, 175));
         dialogLogin.setLocationRelativeTo(this.rootPanel);
 
         dialogLogin.setVisible(true);

@@ -19,6 +19,7 @@ public class ClientLib {
     }
 
     public static String myLogin = null;
+    public static InetSocketAddress myHost = null;
     private static String myPassord = null;
 
     public static boolean ALWAYS_OTR = true;
@@ -61,7 +62,7 @@ public class ClientLib {
     }
 
     public static void login() {
-        FormMain.clientBootstrap.connect(new InetSocketAddress("127.0.0.1", 13137));
+        FormMain.clientBootstrap.connect(myHost);
     }
 
     protected static void sendLogin() {
