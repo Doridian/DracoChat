@@ -24,7 +24,8 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 public class FormMain {
@@ -38,13 +39,14 @@ public class FormMain {
 
     private JFrame rootFrame;
 
-    private boolean runRefreshNicknamesThread = true;
+    private boolean runRefreshNicknamesThread;
     private Thread refreshNicknamesThread;
 
     public FormMain() {
         instance = this;
         genericChatTab = getChatTab(GenericContext.instance);
 
+        runRefreshNicknamesThread = true;
         refreshNicknamesThread = new Thread() {
             @Override
             public void run() {
@@ -132,7 +134,7 @@ public class FormMain {
         dialogLogin.setVisible(true);
     }
 
-    private final HashMap<MessageContext, ChatTab> tabMap = new HashMap<MessageContext, ChatTab>();
+    private final Map<MessageContext, ChatTab> tabMap = new ConcurrentHashMap<MessageContext, ChatTab>();
 
     public void refreshClientUserNickname(MessageContext messageContext) {
         //Refresh tab for user/channel, if present
