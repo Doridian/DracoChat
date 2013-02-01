@@ -13,6 +13,7 @@ import org.jboss.netty.channel.ChannelFutureListener;
 
 import java.io.*;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -61,10 +62,17 @@ public class ServerUser extends User implements Serializable {
         packetUserinfoResponse.users = new User[] { this };
         packetUserinfoResponse.states = new byte[] { this.state };
         packetUserinfoResponse.nicknames = new String[] { this.nickname };
-        synchronized (subscribed_users) {
-            for(ServerUser subscribedUser : subscribed_users) {
-                subscribedUser.sendPacket(packetUserinfoResponse);
+
+        HashSet<ServerUser> reportToUsers = new HashSet<ServerUser>(subscribed_users);
+
+        synchronized (channels) {
+            for(ServerChannel serverChannel : channels) {
+                reportToUsers.addAll(serverChannel.getUsers());
             }
+        }
+
+        for(ServerUser subscribedUser : reportToUsers) {
+            subscribedUser.sendPacket(packetUserinfoResponse);
         }
     }
 
