@@ -14,8 +14,8 @@ public class ServerChannel extends Channel implements Serializable {
 
     protected String password;
 
-    private final HashSet<ServerUser> users = new HashSet<ServerUser>();
-    private HashSet<ServerUser> usersView = new HashSet<ServerUser>();
+    private transient final HashSet<ServerUser> users = new HashSet<ServerUser>();
+    private transient HashSet<ServerUser> usersView = new HashSet<ServerUser>();
 
     protected ServerChannel(String name) {
         super(name);
