@@ -127,6 +127,7 @@ public class ServerUser extends User implements Serializable {
         }
         this.channel = null;
         setState(User.STATE_OFFLINE);
+        System.out.println("[LOGIN] " + this.login + " left the server!");
     }
 
     protected Channel getChannel() {

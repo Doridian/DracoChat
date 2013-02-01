@@ -45,6 +45,10 @@ public class Main {
         serverBootstrap.setOption("child.tcpNoDelay", true);
         serverBootstrap.setOption("child.keepAlive", true);
 
-        serverBootstrap.bind(new InetSocketAddress(13137));
+        final int port = 13137;
+
+        serverBootstrap.bind(new InetSocketAddress(port));
+
+        System.out.println("[NET] Server listening on port " + port);
     }
 }
