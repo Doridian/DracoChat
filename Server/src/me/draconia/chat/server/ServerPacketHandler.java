@@ -66,10 +66,10 @@ public class ServerPacketHandler extends PacketHandler {
                     loginReply(ctx, serverUser, true, "Welcome back :3");
                 }
                 final Channel oldChannel = serverUser.getChannel();
+                serverUser.disconnected(null);
                 serverUser.setChannel(ctx.getChannel());
                 if(oldChannel != null) {
                     kickChannel(oldChannel, "Logged in from a different location");
-                    serverUser.disconnected(oldChannel);
                 }
                 ctx.setAttachment(serverUser);
                 System.out.println("[LOGIN] " + serverUser.login + " joined the server!");

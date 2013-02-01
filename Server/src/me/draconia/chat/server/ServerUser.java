@@ -110,7 +110,7 @@ public class ServerUser extends User implements Serializable {
     }
 
     protected void disconnected(Channel channel) {
-        if(channel != this.channel) return;
+        if(channel != null && channel != this.channel) return;
         synchronized (channels) {
             final ServerChannel[] sChannels = channels.toArray(new ServerChannel[channels.size()]);
             for(ServerChannel serverChannel : sChannels) {
