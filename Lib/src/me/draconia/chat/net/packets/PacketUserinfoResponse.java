@@ -14,11 +14,11 @@ public class PacketUserinfoResponse extends Packet {
 
     @Override
     protected void decode(ChannelBuffer channelBuffer) {
-        byte count = channelBuffer.readByte();
+        short count = channelBuffer.readShort();
         users = new User[count];
         nicknames = new String[count];
         states = new byte[count];
-        for(byte i=0;i<count;i++) {
+        for(short i = 0; i < count; i++) {
             users[i] = UserFactory.instance.getFromLogin(readString(channelBuffer));
             nicknames[i] = readString(channelBuffer);
             states[i] = channelBuffer.readByte();
@@ -27,9 +27,9 @@ public class PacketUserinfoResponse extends Packet {
 
     @Override
     protected void encode(ChannelBuffer channelBuffer) {
-        byte count = (byte)users.length;
-        channelBuffer.writeByte(count);
-        for(byte i=0;i<count;i++) {
+        short count = (short)users.length;
+        channelBuffer.writeShort(count);
+        for(short i = 0; i < count; i++) {
             writeString(channelBuffer, users[i].login);
             writeString(channelBuffer, nicknames[i]);
             channelBuffer.writeByte(states[i]);

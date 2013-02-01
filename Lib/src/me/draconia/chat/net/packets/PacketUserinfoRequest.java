@@ -13,28 +13,28 @@ public class PacketUserinfoRequest extends Packet {
 
     @Override
     protected void decode(ChannelBuffer channelBuffer) {
-        byte count = channelBuffer.readByte();
+        short count = channelBuffer.readShort();
         users_subscribe = new User[count];
-        for(byte i=0;i<count;i++) {
+        for(short i = 0; i < count; i++) {
             users_subscribe[i] = UserFactory.instance.getFromLogin(readString(channelBuffer));
         }
-        count = channelBuffer.readByte();
+        count = channelBuffer.readShort();
         users_unsubscribe = new User[count];
-        for(byte i=0;i<count;i++) {
+        for(short i = 0; i < count; i++) {
             users_unsubscribe[i] = UserFactory.instance.getFromLogin(readString(channelBuffer));
         }
     }
 
     @Override
     protected void encode(ChannelBuffer channelBuffer) {
-        byte count = (byte)users_subscribe.length;
-        channelBuffer.writeByte(count);
-        for(byte i=0;i<count;i++) {
+        short count = (short)users_subscribe.length;
+        channelBuffer.writeShort(count);
+        for(short i = 0; i < count; i++) {
             writeString(channelBuffer, users_subscribe[i].login);
         }
-        count = (byte)users_unsubscribe.length;
-        channelBuffer.writeByte(count);
-        for(byte i=0;i<count;i++) {
+        count = (short)users_unsubscribe.length;
+        channelBuffer.writeShort(count);
+        for(short i = 0; i < count; i++) {
             writeString(channelBuffer, users_unsubscribe[i].login);
         }
     }
