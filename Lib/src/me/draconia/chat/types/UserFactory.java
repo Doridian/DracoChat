@@ -5,9 +5,9 @@ public abstract class UserFactory {
 
     public static void setInstance(UserFactory instance) {
         UserFactory.instance = instance;
-        SystemUser user = new SystemUser();
-        user.setNickname("[SYSTEM]");
-        User.SYSTEM = user;
+        User systemUser = instance.createFromLogin("[system]");
+        systemUser.setNickname("[SYSTEM]");
+        User.SYSTEM = systemUser;
     }
 
     public final User getFromLogin(String login) {

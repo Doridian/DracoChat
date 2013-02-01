@@ -84,7 +84,7 @@ public class ChatTab {
     public void messageReceived(Message message) {
         if(message instanceof TextMessage) {
             TextMessage textMessage = (TextMessage)message;
-            if(message.from instanceof SystemUser) {
+            if(message.from.equals(User.getSYSTEM())) {
                 addText(textMessage.content);
             } else {
                 switch (textMessage.type) {
