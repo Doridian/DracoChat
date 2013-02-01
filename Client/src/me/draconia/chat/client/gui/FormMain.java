@@ -193,6 +193,7 @@ public class FormMain {
         new Thread() {
             @Override
             public void run() {
+                ClientLib.ENABLE_AUTORECONNECT = false;
                 try {
                     clientBootstrap.releaseExternalResources();
                 } catch(Exception e) { }
