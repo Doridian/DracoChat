@@ -9,7 +9,7 @@ import me.draconia.chat.client.types.ClientChannelFactory;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.client.types.ClientUserFactory;
 import me.draconia.chat.net.packets.Packet;
-import me.draconia.chat.net.packets.PacketNickgetRequest;
+import me.draconia.chat.net.packets.PacketUserinfoRequest;
 import me.draconia.chat.types.GenericContext;
 import me.draconia.chat.types.Message;
 import me.draconia.chat.types.MessageContext;
@@ -24,6 +24,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -39,41 +40,41 @@ public class FormMain {
 
     private JFrame rootFrame;
 
-    private boolean runRefreshNicknamesThread;
-    private Thread refreshNicknamesThread;
+    private boolean runRefreshSubscriptionsThread;
+    private Thread refreshSubscriptionsThread;
+    final HashSet<ClientUser> subscriptions_add = new HashSet<ClientUser>();
+    final HashSet<ClientUser> subscriptions_del = new HashSet<ClientUser>();
 
     public FormMain() {
         instance = this;
         genericChatTab = getChatTab(GenericContext.instance);
 
-        runRefreshNicknamesThread = true;
-        refreshNicknamesThread = new Thread() {
+        runRefreshSubscriptionsThread = true;
+        refreshSubscriptionsThread = new Thread() {
             @Override
             public void run() {
-                while(runRefreshNicknamesThread) {
+                while(runRefreshSubscriptionsThread) {
                     try {
-                        Thread.sleep(10000);
+                        Thread.sleep(1000);
                     } catch (InterruptedException e) { }
-                    ArrayList<User> users = new ArrayList<User>();
-                    for(MessageContext messageContext : tabMap.keySet()) {
-                        if(messageContext instanceof User) {
-                            users.add((User)messageContext);
-                        }
+
+                    PacketUserinfoRequest packetUserinfoRequest = new PacketUserinfoRequest();
+                    synchronized (subscriptions_add) {
+                        packetUserinfoRequest.users_subscribe = subscriptions_add.toArray(new User[subscriptions_add.size()]);
+                        packetUserinfoRequest.users_unsubscribe = subscriptions_del.toArray(new User[subscriptions_del.size()]);
                     }
-                    PacketNickgetRequest packetNickgetRequest = new PacketNickgetRequest();
-                    packetNickgetRequest.users = users.toArray(new User[users.size()]);
-                    ClientLib.sendPacket(packetNickgetRequest);
+                    ClientLib.sendPacket(packetUserinfoRequest);
                 }
             }
         };
-        refreshNicknamesThread.start();
+        refreshSubscriptionsThread.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                runRefreshNicknamesThread = false;
+                runRefreshSubscriptionsThread = false;
                 try {
-                    refreshNicknamesThread.join();
+                    refreshSubscriptionsThread.join();
                 } catch (InterruptedException e) { }
             }
         });
@@ -119,9 +120,14 @@ public class FormMain {
     }
 
     public void onSuccessfulLogin() {
-        for(MessageContext messageContext : tabMap.keySet()) {
-            if(messageContext instanceof ClientChannel) {
-                ((ClientChannel)messageContext).join();
+        synchronized (subscriptions_add) {
+            subscriptions_del.clear();
+            for(MessageContext messageContext : tabMap.keySet()) {
+                if(messageContext instanceof ClientChannel) {
+                    ((ClientChannel)messageContext).join();
+                } else if(messageContext instanceof ClientUser) {
+                    subscriptions_add.add((ClientUser)messageContext);
+                }
             }
         }
     }
@@ -154,7 +160,7 @@ public class FormMain {
         }
 
         if(messageContext.equals(ClientLib.myUser)) {
-            instance.rootFrame.setTitle("DracoChat - " + ClientLib.myUser.getNickname() + " [" + ClientLib.myUser.login + "]");
+            instance.rootFrame.setTitle("DracoChat - " + ClientLib.myUser.getContextName());
         }
     }
 
@@ -185,6 +191,12 @@ public class FormMain {
             ChatTab chatTab = tabMap.remove(messageContext);
             if(chatTab != null) {
                 chatTabs.remove(chatTab.chatTabPanel);
+            }
+            if(messageContext instanceof ClientUser) {
+                synchronized (subscriptions_add) {
+                    subscriptions_add.remove(messageContext);
+                    subscriptions_del.add((ClientUser)messageContext);
+                }
             }
         }
     }

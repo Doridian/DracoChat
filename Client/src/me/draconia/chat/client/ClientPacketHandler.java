@@ -112,10 +112,12 @@ public class ClientPacketHandler extends PacketHandler {
                 PacketNickset packetNickset = (PacketNickset)packet;
                 ClientLib.myUser.setNickname(packetNickset.nickname);
                 break;
-            case Packets.NICK_GET:
-                PacketNickgetResponse packetNickgetResponse = (PacketNickgetResponse)packet;
-                for(int i = 0; i < packetNickgetResponse.users.length; i++) {
-                    packetNickgetResponse.users[i].setNickname(packetNickgetResponse.nicknames[i]);
+            case Packets.USERINFO:
+                PacketUserinfoResponse packetUserinfoResponse = (PacketUserinfoResponse)packet;
+                for(int i = 0; i < packetUserinfoResponse.users.length; i++) {
+                    ClientUser cltUser = (ClientUser)packetUserinfoResponse.users[i];
+                    cltUser.setNickname(packetUserinfoResponse.nicknames[i]);
+                    cltUser.setState(packetUserinfoResponse.states[i]);
                 }
                 break;
             case Packets.DISCONNECT:

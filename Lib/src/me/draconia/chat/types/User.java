@@ -2,13 +2,18 @@ package me.draconia.chat.types;
 
 import java.io.Serializable;
 
-public class User implements MessageContext, Serializable {
+public abstract class User implements MessageContext, Serializable {
     public static final long serialVersionUID = -1L;
 
+    public static final byte STATE_ONLINE = 1;
+    public static final byte STATE_OFFLINE = 0;
+
     public final String login;
-    private String nickname;
+    protected String nickname;
 
     protected static User SYSTEM;
+
+    public abstract byte getState();
 
     public static User getSYSTEM() {
         return SYSTEM;
@@ -58,7 +63,7 @@ public class User implements MessageContext, Serializable {
         if(this.nickname == null) {
             return this.login;
         } else {
-            return this.login + " [" + this.nickname + "]";
+            return this.nickname + " [" + this.login + "]";
         }
     }
 }

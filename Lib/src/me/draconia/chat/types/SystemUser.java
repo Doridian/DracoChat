@@ -31,5 +31,10 @@ public class SystemUser extends User {
     }
 
     @Override
+    public byte getState() {
+        return User.STATE_ONLINE;
+    }
+
+    @Override
     public void setNickname(String nickname) { }
 }

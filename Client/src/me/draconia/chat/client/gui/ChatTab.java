@@ -3,7 +3,7 @@ package me.draconia.chat.client.gui;
 import me.draconia.chat.client.ClientLib;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.commands.BaseClientCommand;
-import me.draconia.chat.net.packets.PacketNickgetRequest;
+import me.draconia.chat.net.packets.PacketUserinfoRequest;
 import me.draconia.chat.types.*;
 
 import javax.swing.*;
@@ -56,10 +56,9 @@ public class ChatTab {
 
         if(relatedContext instanceof ClientUser) {
             ClientUser relatedUser = (ClientUser)relatedContext;
-            if(relatedUser.getNickname() == null) {
-                PacketNickgetRequest packetNickgetRequest = new PacketNickgetRequest();
-                packetNickgetRequest.users = new User[] { relatedUser };
-                ClientLib.sendPacket(packetNickgetRequest);
+            synchronized (FormMain.instance.subscriptions_add) {
+                FormMain.instance.subscriptions_del.remove(relatedUser);
+                FormMain.instance.subscriptions_add.add(relatedUser);
             }
         }
 

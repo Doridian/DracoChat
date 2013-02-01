@@ -12,6 +12,7 @@ import org.jboss.netty.handler.ssl.SslHandler;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
 import java.util.Set;
 
 public class ServerPacketHandler extends PacketHandler {
@@ -76,15 +77,32 @@ public class ServerPacketHandler extends PacketHandler {
             case Packets.DISCONNECT:
                 ctx.getChannel().close();
                 break;
-            case Packets.NICK_GET:
-                PacketNickgetRequest packetNickgetRequest = (PacketNickgetRequest)packet;
-                PacketNickgetResponse packetNickgetResponse = new PacketNickgetResponse();
-                packetNickgetResponse.users = packetNickgetRequest.users;
-                packetNickgetResponse.nicknames = new String[packetNickgetRequest.users.length];
-                for(int i = 0; i < packetNickgetRequest.users.length; i++) {
-                    packetNickgetResponse.nicknames[i] = packetNickgetRequest.users[i].getNickname();
+            case Packets.USERINFO:
+                PacketUserinfoRequest packetUserinfoRequest = (PacketUserinfoRequest)packet;
+
+                for(User unsubscribeUser : packetUserinfoRequest.users_unsubscribe) {
+                    currentUser.unsubscribe((ServerUser)unsubscribeUser);
                 }
-                currentUser.sendPacket(packetNickgetResponse);
+
+                ArrayList<User> newSubscriptions = new ArrayList<User>();
+                for(User subscribeUser : packetUserinfoRequest.users_subscribe) {
+                    if(currentUser.subscribe((ServerUser)subscribeUser)) {
+                        newSubscriptions.add(subscribeUser);
+                    }
+                }
+
+                PacketUserinfoResponse packetUserinfoResponse = new PacketUserinfoResponse();
+                packetUserinfoResponse.users = newSubscriptions.toArray(new User[newSubscriptions.size()]);
+                packetUserinfoResponse.nicknames = new String[packetUserinfoResponse.users.length];
+                packetUserinfoResponse.states = new byte[packetUserinfoResponse.users.length];
+
+                for(int i = 0; i < packetUserinfoResponse.users.length; i++) {
+                    ServerUser svrUser = (ServerUser)packetUserinfoResponse.users[i];
+                    packetUserinfoResponse.nicknames[i] = svrUser.getNickname();
+                    packetUserinfoResponse.states[i] = svrUser.getState();
+                }
+
+                currentUser.sendPacket(packetUserinfoResponse);
                 break;
             case Packets.NICK_SET:
                 PacketNickset packetNickset = (PacketNickset)packet;

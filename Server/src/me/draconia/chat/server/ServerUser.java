@@ -3,8 +3,8 @@ package me.draconia.chat.server;
 import iaik.sha3.IAIKSHA3Provider;
 import me.draconia.chat.net.packets.Packet;
 import me.draconia.chat.net.packets.PacketMessageToClient;
+import me.draconia.chat.net.packets.PacketUserinfoResponse;
 import me.draconia.chat.types.GenericContext;
-import me.draconia.chat.types.Message;
 import me.draconia.chat.types.TextMessage;
 import me.draconia.chat.types.User;
 import org.jboss.netty.channel.Channel;
@@ -19,27 +19,86 @@ import java.util.HashSet;
 public class ServerUser extends User implements Serializable {
     public static final long serialVersionUID = -1L;
 
+    private transient byte state = User.STATE_OFFLINE;
+
     private byte[] password;
     private transient Channel channel;
 
     protected transient HashSet<ServerChannel> channels = new HashSet<ServerChannel>();
+    protected transient HashSet<ServerUser> subscribed_users = new HashSet<ServerUser>();
+    protected transient HashSet<ServerUser> subscriptions = new HashSet<ServerUser>();
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
         channels = new HashSet<ServerChannel>();
+        subscribed_users = new HashSet<ServerUser>();
+        subscriptions = new HashSet<ServerUser>();
+        state = User.STATE_OFFLINE;
     }
 
     protected ServerUser(String login) {
         super(login);
     }
 
-    protected void setChannel(final Channel channel) {
-        this.channel = channel;
-        channel.getCloseFuture().addListener(new ChannelFutureListener() {
+    public byte getState() {
+        return state;
+    }
+
+    public void setState(byte state) {
+        if(state == this.state) return;
+        this.state = state;
+        notifySubscribers();
+    }
+
+    @Override
+    public void setNickname(String nickname) {
+        if(nickname.equals(this.nickname)) return;
+        super.setNickname(nickname);
+        notifySubscribers();
+    }
+
+    public void notifySubscribers() {
+        PacketUserinfoResponse packetUserinfoResponse = new PacketUserinfoResponse();
+        packetUserinfoResponse.users = new User[] { this };
+        packetUserinfoResponse.states = new byte[] { this.state };
+        packetUserinfoResponse.nicknames = new String[] { this.nickname };
+        synchronized (subscribed_users) {
+            for(ServerUser subscribedUser : subscribed_users) {
+                subscribedUser.sendPacket(packetUserinfoResponse);
+            }
+        }
+    }
+
+    protected void setChannel(final Channel setChannel) {
+        setState(User.STATE_ONLINE);
+        this.channel = setChannel;
+        setChannel.getCloseFuture().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                disconnected(channel);
+                disconnected(setChannel);
             }
         });
+    }
+
+    public boolean subscribe(ServerUser serverUser) {
+        final boolean ret;
+        synchronized (serverUser.subscribed_users) {
+        synchronized (subscriptions) {
+            ret = serverUser.subscribed_users.add(this);
+            subscriptions.add(serverUser);
+        }
+        }
+        return ret;
+    }
+
+    public boolean unsubscribe(ServerUser serverUser) {
+        final boolean ret;
+        synchronized (serverUser.subscribed_users) {
+        synchronized (subscriptions) {
+            ret = serverUser.subscribed_users.remove(this);
+            subscriptions.remove(serverUser);
+        }
+        }
+        return ret;
     }
 
     protected void disconnected(Channel channel) {
@@ -51,7 +110,15 @@ public class ServerUser extends User implements Serializable {
             }
             channels.clear();
         }
+        synchronized (subscriptions) {
+            final ServerUser[] sUsers = subscriptions.toArray(new ServerUser[subscriptions.size()]);
+            for(ServerUser serverUser : sUsers) {
+                this.unsubscribe(serverUser);
+            }
+            subscriptions.clear();
+        }
         this.channel = null;
+        setState(User.STATE_OFFLINE);
     }
 
     protected Channel getChannel() {

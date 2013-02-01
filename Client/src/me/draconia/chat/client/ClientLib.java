@@ -17,6 +17,7 @@ import java.net.InetSocketAddress;
 public class ClientLib {
     protected static Channel clientDataChannel;
     public static void sendPacket(Packet packet) {
+        if(clientDataChannel == null) return;
         clientDataChannel.write(packet.getData());
     }
 
