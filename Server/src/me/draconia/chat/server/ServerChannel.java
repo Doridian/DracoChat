@@ -5,6 +5,8 @@ import me.draconia.chat.net.packets.PacketChannelUserSnapshotResponse;
 import me.draconia.chat.types.Channel;
 import me.draconia.chat.types.User;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
@@ -14,8 +16,13 @@ public class ServerChannel extends Channel implements Serializable {
 
     protected String password;
 
-    private transient final HashSet<ServerUser> users = new HashSet<ServerUser>();
+    private transient HashSet<ServerUser> users = new HashSet<ServerUser>();
     private transient HashSet<ServerUser> usersView = new HashSet<ServerUser>();
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        users = new HashSet<ServerUser>();
+        usersView = new HashSet<ServerUser>();
+    }
 
     protected ServerChannel(String name) {
         super(name);

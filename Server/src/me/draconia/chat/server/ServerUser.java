@@ -22,7 +22,11 @@ public class ServerUser extends User implements Serializable {
     private byte[] password;
     private transient Channel channel;
 
-    protected transient final HashSet<ServerChannel> channels = new HashSet<ServerChannel>();
+    protected transient HashSet<ServerChannel> channels = new HashSet<ServerChannel>();
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        channels = new HashSet<ServerChannel>();
+    }
 
     protected ServerUser(String login) {
         super(login);
@@ -40,9 +44,8 @@ public class ServerUser extends User implements Serializable {
 
     protected void disconnected(Channel channel) {
         if(channel != this.channel) return;
-        final ServerChannel[] sChannels;
         synchronized (channels) {
-            sChannels = channels.toArray(new ServerChannel[channels.size()]);
+            final ServerChannel[] sChannels = channels.toArray(new ServerChannel[channels.size()]);
             for(ServerChannel serverChannel : sChannels) {
                 serverChannel.leaveUser(this);
             }
