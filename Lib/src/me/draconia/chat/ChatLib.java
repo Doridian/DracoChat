@@ -14,7 +14,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 public class ChatLib {
-    public static final int PROTOCOL_VERSION = 1;
+    public static final int PROTOCOL_VERSION = 2;
 
     public static ChannelPipelineFactory initialize(final SSLContext sslContext, final boolean clientMode, final PacketHandler packetHandler, final Packet.Side side, final UserFactory userFactory, final ChannelFactory channelFactory) {
         Packet.initialize(side);
