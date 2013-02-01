@@ -20,9 +20,9 @@ public class ServerUser extends User implements Serializable {
     public static final long serialVersionUID = -1L;
 
     private byte[] password;
-    private Channel channel;
+    private transient Channel channel;
 
-    protected final HashSet<ServerChannel> channels = new HashSet<ServerChannel>();
+    protected transient final HashSet<ServerChannel> channels = new HashSet<ServerChannel>();
 
     protected ServerUser(String login) {
         super(login);

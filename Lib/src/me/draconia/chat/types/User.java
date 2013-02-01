@@ -7,7 +7,6 @@ public class User implements MessageContext, Serializable {
 
     public final String login;
     private String nickname;
-    private String contextName;
 
     protected static User SYSTEM;
 
@@ -17,7 +16,6 @@ public class User implements MessageContext, Serializable {
 
     protected User(String login) {
         this.login = login;
-        this.contextName = login;
     }
 
     @Override
@@ -31,11 +29,6 @@ public class User implements MessageContext, Serializable {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
-        if(this.nickname == null) {
-            this.contextName = this.login;
-        } else {
-            this.contextName = this.login + " [" + this.nickname + "]";
-        }
     }
 
     public String getDisplayName() {
@@ -62,6 +55,10 @@ public class User implements MessageContext, Serializable {
 
     @Override
     public String getContextName() {
-        return contextName;
+        if(this.nickname == null) {
+            return this.login;
+        } else {
+            return this.login + " [" + this.nickname + "]";
+        }
     }
 }
