@@ -104,7 +104,7 @@
               </grid>
             </constraints>
             <properties>
-              <text value="localhost"/>
+              <text value="chat.draconia.me"/>
             </properties>
           </component>
         </children>
