@@ -82,8 +82,10 @@ public class FormMain {
 
 	public static void main(String[] args) {
 		try {
+			Class.forName("com.jtattoo.plaf.noire.NoireLookAndFeel");
 			UIManager.setLookAndFeel("com.jtattoo.plaf.noire.NoireLookAndFeel");
 		} catch (Exception e) {
+			e.printStackTrace();
 			System.out.println("Unable to load look and feel");
 		}
 
