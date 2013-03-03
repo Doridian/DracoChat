@@ -127,9 +127,11 @@ public class ServerUser extends User implements Serializable {
 			}
 			subscriptions.clear();
 		}
+		if(this.channel != null) {
+			System.out.println("[LOGIN] " + this.login + " left the server!");
+		}
 		this.channel = null;
 		setState(User.STATE_OFFLINE);
-		System.out.println("[LOGIN] " + this.login + " left the server!");
 	}
 
 	protected Channel getChannel() {
