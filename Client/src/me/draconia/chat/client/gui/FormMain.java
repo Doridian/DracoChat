@@ -3,7 +3,6 @@ package me.draconia.chat.client.gui;
 import me.draconia.chat.ChatLib;
 import me.draconia.chat.client.ClientLib;
 import me.draconia.chat.client.ClientPacketHandler;
-import me.draconia.chat.client.ClientTrustManagerFactory;
 import me.draconia.chat.client.types.ClientChannel;
 import me.draconia.chat.client.types.ClientChannelFactory;
 import me.draconia.chat.client.types.ClientUser;
@@ -95,7 +94,8 @@ public class FormMain {
 		try {
 			// Initialize the SSLContext to work with our key managers.
 			sslContext = SSLContext.getInstance("TLS");
-			sslContext.init(null, ClientTrustManagerFactory.getTrustManagers(), null);
+			//sslContext.init(null, ClientTrustManagerFactory.getTrustManagers(), null);
+			sslContext.init(null, null, null);
 		} catch (Exception e) {
 			throw new Error("Failed to initialize the client-side SSLContext", e);
 		}

@@ -2,34 +2,65 @@ package me.draconia.chat.server;
 
 import me.draconia.chat.ChatLib;
 import me.draconia.chat.net.packets.Packet;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import java.io.FileInputStream;
+import java.io.FileReader;
 import java.net.InetSocketAddress;
+import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.Security;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 
 public class Main {
 	public static void main(String[] args) {
+		Security.addProvider(new BouncyCastleProvider());
+
 		SSLContext sslContext;
 
 		try {
-			String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
-			if (algorithm == null) {
-				algorithm = "SunX509";
+			final char[] ksPW = "secret".toCharArray();
+
+			final JcaX509CertificateConverter certificateConverter = new JcaX509CertificateConverter().setProvider("BC");
+
+			FileReader fileReader = new FileReader("server.crt");
+			PEMParser pemReader = new PEMParser(fileReader);
+			X509Certificate mainCert = null;
+			ArrayList<X509Certificate> certs = new ArrayList<X509Certificate>();
+			while(pemReader.ready()) {
+				X509CertificateHolder holder = (X509CertificateHolder)pemReader.readObject();
+				if(holder == null) break;
+				X509Certificate cert = certificateConverter.getCertificate(holder);
+				certs.add(cert);
+				if(mainCert == null) mainCert = cert;
 			}
+			pemReader.close();
+
+			fileReader = new FileReader("server.key");
+			pemReader = new PEMParser(fileReader);
+			KeyPair keyPair = new JcaPEMKeyConverter().setProvider("BC").getKeyPair((PEMKeyPair)pemReader.readObject());
+			pemReader.close();
 
 			KeyStore ks = KeyStore.getInstance("JKS");
-			ks.load(new FileInputStream("server.jks"), "secret".toCharArray());
+			ks.load(null);
+			ks.setCertificateEntry("cert", mainCert);
+			ks.setKeyEntry("key", keyPair.getPrivate(), ksPW, certs.toArray(new Certificate[certs.size()]));
 
 			// Set up key manager factory to use our key store
-			KeyManagerFactory kmf = KeyManagerFactory.getInstance(algorithm);
-			kmf.init(ks, "secret".toCharArray());
+			KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+			kmf.init(ks, ksPW);
 
 			// Initialize the SSLContext to work with our key managers.
 			sslContext = SSLContext.getInstance("TLS");

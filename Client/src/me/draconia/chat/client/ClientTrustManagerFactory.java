@@ -44,6 +44,6 @@ public class ClientTrustManagerFactory extends TrustManagerFactorySpi {
 	}
 
 	public static TrustManager[] getTrustManagers() {
-		return new TrustManager[]{DUMMY_TRUST_MANAGER};  //To change body of implemented methods use File | Settings | File Templates.
+		return new TrustManager[]{DUMMY_TRUST_MANAGER};
 	}
 }

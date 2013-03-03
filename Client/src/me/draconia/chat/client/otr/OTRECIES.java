@@ -1,5 +1,10 @@
 package me.draconia.chat.client.otr;
 
+import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
+import org.bouncycastle.crypto.digests.SHA1Digest;
+import org.bouncycastle.crypto.engines.IESEngine;
+import org.bouncycastle.crypto.generators.KDF2BytesGenerator;
+import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.jce.provider.JCEIESCipher;
 import org.bouncycastle.jce.spec.IEKeySpec;
 
@@ -10,7 +15,11 @@ import java.security.InvalidKeyException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 
-public class OTRECIES extends JCEIESCipher.ECIES {
+public class OTRECIES extends JCEIESCipher {
+	public OTRECIES() {
+		super(new IESEngine(new ECDHBasicAgreement(), new KDF2BytesGenerator(new SHA1Digest()), new HMac(new SHA1Digest())));
+	}
+
 	public void init(int mode, IEKeySpec ieKeySpec, AlgorithmParameterSpec algorithmParameterSpec) throws InvalidKeyException, InvalidAlgorithmParameterException {
 		super.engineInit(mode, ieKeySpec, algorithmParameterSpec, new SecureRandom());
 	}

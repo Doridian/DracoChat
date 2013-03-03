@@ -26,6 +26,8 @@ public class ClientPacketHandler extends PacketHandler {
 		handshakeFuture.addListener(new ChannelFutureListener() {
 			@Override
 			public void operationComplete(ChannelFuture channelFuture) throws Exception {
+				Throwable meow = channelFuture.getCause();
+				if(meow != null) { meow.printStackTrace(); throw new Error(meow); }
 				FormMain.genericChatTab.addText("[NET] Connected");
 				ClientLib.clientDataChannel = channelFuture.getChannel();
 				ClientLib.sendLogin();
