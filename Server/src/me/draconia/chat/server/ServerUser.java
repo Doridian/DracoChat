@@ -11,177 +11,179 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
 public class ServerUser extends User implements Serializable {
-    public static final long serialVersionUID = -1L;
+	public static final long serialVersionUID = -1L;
 
-    private transient byte state = User.STATE_OFFLINE;
+	private transient byte state = User.STATE_OFFLINE;
 
-    private byte[] password;
-    private transient Channel channel;
+	private byte[] password;
+	private transient Channel channel;
 
-    protected transient HashSet<ServerChannel> channels = new HashSet<ServerChannel>();
-    protected transient HashSet<ServerUser> subscribed_users = new HashSet<ServerUser>();
-    protected transient HashSet<ServerUser> subscriptions = new HashSet<ServerUser>();
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        channels = new HashSet<ServerChannel>();
-        subscribed_users = new HashSet<ServerUser>();
-        subscriptions = new HashSet<ServerUser>();
-        state = User.STATE_OFFLINE;
-    }
+	protected transient HashSet<ServerChannel> channels = new HashSet<ServerChannel>();
+	protected transient HashSet<ServerUser> subscribed_users = new HashSet<ServerUser>();
+	protected transient HashSet<ServerUser> subscriptions = new HashSet<ServerUser>();
 
-    protected ServerUser(String login) {
-        super(login);
-    }
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+		in.defaultReadObject();
+		channels = new HashSet<ServerChannel>();
+		subscribed_users = new HashSet<ServerUser>();
+		subscriptions = new HashSet<ServerUser>();
+		state = User.STATE_OFFLINE;
+	}
 
-    public byte getState() {
-        return state;
-    }
+	protected ServerUser(String login) {
+		super(login);
+	}
 
-    public void setState(byte state) {
-        if(state == this.state) return;
-        this.state = state;
-        notifySubscribers();
-    }
+	public byte getState() {
+		return state;
+	}
 
-    @Override
-    public void setNickname(String nickname) {
-        if(nickname.equals(this.nickname)) return;
-        super.setNickname(nickname);
-        notifySubscribers();
-    }
+	public void setState(byte state) {
+		if (state == this.state) return;
+		this.state = state;
+		notifySubscribers();
+	}
 
-    public void notifySubscribers() {
-        PacketUserinfoResponse packetUserinfoResponse = new PacketUserinfoResponse();
-        packetUserinfoResponse.users = new User[] { this };
-        packetUserinfoResponse.states = new byte[] { this.state };
-        packetUserinfoResponse.nicknames = new String[] { this.nickname };
+	@Override
+	public void setNickname(String nickname) {
+		if (nickname.equals(this.nickname)) return;
+		super.setNickname(nickname);
+		notifySubscribers();
+	}
 
-        HashSet<ServerUser> reportToUsers = new HashSet<ServerUser>(subscribed_users);
+	public void notifySubscribers() {
+		PacketUserinfoResponse packetUserinfoResponse = new PacketUserinfoResponse();
+		packetUserinfoResponse.users = new User[]{this};
+		packetUserinfoResponse.states = new byte[]{this.state};
+		packetUserinfoResponse.nicknames = new String[]{this.nickname};
 
-        synchronized (channels) {
-            for(ServerChannel serverChannel : channels) {
-                reportToUsers.addAll(serverChannel.getUsers());
-            }
-        }
+		HashSet<ServerUser> reportToUsers = new HashSet<ServerUser>(subscribed_users);
 
-        for(ServerUser subscribedUser : reportToUsers) {
-            subscribedUser.sendPacket(packetUserinfoResponse);
-        }
-    }
+		synchronized (channels) {
+			for (ServerChannel serverChannel : channels) {
+				reportToUsers.addAll(serverChannel.getUsers());
+			}
+		}
 
-    protected void setChannel(final Channel setChannel) {
-        setState(User.STATE_ONLINE);
-        this.channel = setChannel;
-        setChannel.getCloseFuture().addListener(new ChannelFutureListener() {
-            @Override
-            public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                disconnected(setChannel);
-            }
-        });
-    }
+		for (ServerUser subscribedUser : reportToUsers) {
+			subscribedUser.sendPacket(packetUserinfoResponse);
+		}
+	}
 
-    public boolean subscribe(ServerUser serverUser) {
-        final boolean ret;
-        synchronized (serverUser.subscribed_users) {
-        synchronized (subscriptions) {
-            ret = serverUser.subscribed_users.add(this);
-            subscriptions.add(serverUser);
-        }
-        }
-        return ret;
-    }
+	protected void setChannel(final Channel setChannel) {
+		setState(User.STATE_ONLINE);
+		this.channel = setChannel;
+		setChannel.getCloseFuture().addListener(new ChannelFutureListener() {
+			@Override
+			public void operationComplete(ChannelFuture channelFuture) throws Exception {
+				disconnected(setChannel);
+			}
+		});
+	}
 
-    public boolean unsubscribe(ServerUser serverUser) {
-        final boolean ret;
-        synchronized (serverUser.subscribed_users) {
-        synchronized (subscriptions) {
-            ret = serverUser.subscribed_users.remove(this);
-            subscriptions.remove(serverUser);
-        }
-        }
-        return ret;
-    }
+	public boolean subscribe(ServerUser serverUser) {
+		final boolean ret;
+		synchronized (serverUser.subscribed_users) {
+			synchronized (subscriptions) {
+				ret = serverUser.subscribed_users.add(this);
+				subscriptions.add(serverUser);
+			}
+		}
+		return ret;
+	}
 
-    protected void disconnected(Channel channel) {
-        if(channel != null && channel != this.channel) return;
-        synchronized (channels) {
-            final ServerChannel[] sChannels = channels.toArray(new ServerChannel[channels.size()]);
-            for(ServerChannel serverChannel : sChannels) {
-                serverChannel.leaveUser(this);
-            }
-            channels.clear();
-        }
-        synchronized (subscriptions) {
-            final ServerUser[] sUsers = subscriptions.toArray(new ServerUser[subscriptions.size()]);
-            for(ServerUser serverUser : sUsers) {
-                this.unsubscribe(serverUser);
-            }
-            subscriptions.clear();
-        }
-        this.channel = null;
-        setState(User.STATE_OFFLINE);
-        System.out.println("[LOGIN] " + this.login + " left the server!");
-    }
+	public boolean unsubscribe(ServerUser serverUser) {
+		final boolean ret;
+		synchronized (serverUser.subscribed_users) {
+			synchronized (subscriptions) {
+				ret = serverUser.subscribed_users.remove(this);
+				subscriptions.remove(serverUser);
+			}
+		}
+		return ret;
+	}
 
-    protected Channel getChannel() {
-        return channel;
-    }
+	protected void disconnected(Channel channel) {
+		if (channel != null && channel != this.channel) return;
+		synchronized (channels) {
+			final ServerChannel[] sChannels = channels.toArray(new ServerChannel[channels.size()]);
+			for (ServerChannel serverChannel : sChannels) {
+				serverChannel.leaveUser(this);
+			}
+			channels.clear();
+		}
+		synchronized (subscriptions) {
+			final ServerUser[] sUsers = subscriptions.toArray(new ServerUser[subscriptions.size()]);
+			for (ServerUser serverUser : sUsers) {
+				this.unsubscribe(serverUser);
+			}
+			subscriptions.clear();
+		}
+		this.channel = null;
+		setState(User.STATE_OFFLINE);
+		System.out.println("[LOGIN] " + this.login + " left the server!");
+	}
 
-    private byte[] hashPassword(String password) {
-        try {
-            MessageDigest messageDigest = MessageDigest.getInstance("KECCAK256", IAIKSHA3Provider.getInstance());
-            messageDigest.update(login.getBytes("UTF-8"));
-            messageDigest.update(password.getBytes("UTF-8"));
-            return messageDigest.digest();
-        } catch(Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("UPS");
-        }
-    }
+	protected Channel getChannel() {
+		return channel;
+	}
 
-    public void setPassword(String password) {
-        this.password = hashPassword(password);
-    }
+	private byte[] hashPassword(String password) {
+		try {
+			MessageDigest messageDigest = MessageDigest.getInstance("KECCAK256", IAIKSHA3Provider.getInstance());
+			messageDigest.update(login.getBytes("UTF-8"));
+			messageDigest.update(password.getBytes("UTF-8"));
+			return messageDigest.digest();
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("UPS");
+		}
+	}
 
-    public boolean checkPassword(String password) {
-        if(this.password == null || password == null)
-            return false;
-        return Arrays.equals(this.password, hashPassword(password));
-    }
+	public void setPassword(String password) {
+		this.password = hashPassword(password);
+	}
 
-    public boolean hasPassword() {
-        return (this.password != null);
-    }
+	public boolean checkPassword(String password) {
+		if (this.password == null || password == null)
+			return false;
+		return Arrays.equals(this.password, hashPassword(password));
+	}
 
-    public boolean sendPacket(Packet packet) {
-        if(channel == null) return false;
-        channel.write(packet.getData());
-        return true;
-    }
+	public boolean hasPassword() {
+		return (this.password != null);
+	}
 
-    public boolean sendSystemMessage(String text) {
-        return sendSystemMessage(text, TextMessage.TYPE_SYSTEM);
-    }
+	public boolean sendPacket(Packet packet) {
+		if (channel == null) return false;
+		channel.write(packet.getData());
+		return true;
+	}
 
-    public boolean sendSystemError(String text) {
-        return sendSystemMessage(text, TextMessage.TYPE_SYSTEM_ERROR);
-    }
+	public boolean sendSystemMessage(String text) {
+		return sendSystemMessage(text, TextMessage.TYPE_SYSTEM);
+	}
 
-    public boolean sendSystemMessage(String text, byte type) {
-        TextMessage message = new TextMessage();
-        message.content = text;
-        message.type = type;
-        message.context = GenericContext.instance;
-        message.from = User.getSYSTEM();
-        PacketMessageToClient packetMessageToClient = new PacketMessageToClient();
-        packetMessageToClient.message = message;
-        return sendPacket(packetMessageToClient);
-    }
+	public boolean sendSystemError(String text) {
+		return sendSystemMessage(text, TextMessage.TYPE_SYSTEM_ERROR);
+	}
+
+	public boolean sendSystemMessage(String text, byte type) {
+		TextMessage message = new TextMessage();
+		message.content = text;
+		message.type = type;
+		message.context = GenericContext.instance;
+		message.from = User.getSYSTEM();
+		PacketMessageToClient packetMessageToClient = new PacketMessageToClient();
+		packetMessageToClient.message = message;
+		return sendPacket(packetMessageToClient);
+	}
 }

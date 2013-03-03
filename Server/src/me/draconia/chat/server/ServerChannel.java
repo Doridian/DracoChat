@@ -12,68 +12,69 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ServerChannel extends Channel implements Serializable {
-    public static final long serialVersionUID = -1L;
+	public static final long serialVersionUID = -1L;
 
-    protected String password;
+	protected String password;
 
-    private transient HashSet<ServerUser> users = new HashSet<ServerUser>();
-    private transient HashSet<ServerUser> usersView = new HashSet<ServerUser>();
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        users = new HashSet<ServerUser>();
-        usersView = new HashSet<ServerUser>();
-    }
+	private transient HashSet<ServerUser> users = new HashSet<ServerUser>();
+	private transient HashSet<ServerUser> usersView = new HashSet<ServerUser>();
 
-    protected ServerChannel(String name) {
-        super(name);
-    }
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+		in.defaultReadObject();
+		users = new HashSet<ServerUser>();
+		usersView = new HashSet<ServerUser>();
+	}
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+	protected ServerChannel(String name) {
+		super(name);
+	}
 
-    public boolean checkPassword(String password) {
-        return (this.password == null && (password == null || password.isEmpty())) || this.password.equals(password);
-    }
+	public void setPassword(String password) {
+		this.password = password;
+	}
 
-    public Set<ServerUser> getUsers() {
-        return usersView;
-    }
+	public boolean checkPassword(String password) {
+		return (this.password == null && (password == null || password.isEmpty())) || this.password.equals(password);
+	}
 
-    public void joinUser(ServerUser serverUser) {
-        synchronized (users) {
-            synchronized (serverUser.channels) {
-                users.add(serverUser);
-                serverUser.channels.add(this);
-            }
-            informChannelAction(serverUser, PacketChannelAction.ACTION_JOIN);
-            usersView = (HashSet<ServerUser>)users.clone();
-        }
+	public Set<ServerUser> getUsers() {
+		return usersView;
+	}
 
-        PacketChannelUserSnapshotResponse packetChannelUserSnapshotResponse = new PacketChannelUserSnapshotResponse();
-        packetChannelUserSnapshotResponse.channel = this;
-        packetChannelUserSnapshotResponse.users = usersView.toArray(new User[usersView.size()]);
-        serverUser.sendPacket(packetChannelUserSnapshotResponse);
-    }
+	public void joinUser(ServerUser serverUser) {
+		synchronized (users) {
+			synchronized (serverUser.channels) {
+				users.add(serverUser);
+				serverUser.channels.add(this);
+			}
+			informChannelAction(serverUser, PacketChannelAction.ACTION_JOIN);
+			usersView = (HashSet<ServerUser>) users.clone();
+		}
 
-    public void leaveUser(ServerUser serverUser) {
-        synchronized (users) {
-            informChannelAction(serverUser, PacketChannelAction.ACTION_LEAVE);
-            synchronized (serverUser.channels) {
-                users.remove(serverUser);
-                serverUser.channels.remove(this);
-            }
-            usersView = (HashSet<ServerUser>)users.clone();
-        }
-    }
+		PacketChannelUserSnapshotResponse packetChannelUserSnapshotResponse = new PacketChannelUserSnapshotResponse();
+		packetChannelUserSnapshotResponse.channel = this;
+		packetChannelUserSnapshotResponse.users = usersView.toArray(new User[usersView.size()]);
+		serverUser.sendPacket(packetChannelUserSnapshotResponse);
+	}
 
-    private void informChannelAction(ServerUser serverUser, byte action) {
-        PacketChannelAction packetChannelAction = new PacketChannelAction();
-        packetChannelAction.user = serverUser;
-        packetChannelAction.channel = this;
-        packetChannelAction.action = action;
-        for(ServerUser otherUser : users) {
-            otherUser.sendPacket(packetChannelAction);
-        }
-    }
+	public void leaveUser(ServerUser serverUser) {
+		synchronized (users) {
+			informChannelAction(serverUser, PacketChannelAction.ACTION_LEAVE);
+			synchronized (serverUser.channels) {
+				users.remove(serverUser);
+				serverUser.channels.remove(this);
+			}
+			usersView = (HashSet<ServerUser>) users.clone();
+		}
+	}
+
+	private void informChannelAction(ServerUser serverUser, byte action) {
+		PacketChannelAction packetChannelAction = new PacketChannelAction();
+		packetChannelAction.user = serverUser;
+		packetChannelAction.channel = this;
+		packetChannelAction.action = action;
+		for (ServerUser otherUser : users) {
+			otherUser.sendPacket(packetChannelAction);
+		}
+	}
 }

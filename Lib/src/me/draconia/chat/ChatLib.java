@@ -14,26 +14,26 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 public class ChatLib {
-    public static final int PROTOCOL_VERSION = 2;
+	public static final int PROTOCOL_VERSION = 2;
 
-    public static ChannelPipelineFactory initialize(final SSLContext sslContext, final boolean clientMode, final PacketHandler packetHandler, final Packet.Side side, final UserFactory userFactory, final ChannelFactory channelFactory) {
-        Packet.initialize(side);
-        UserFactory.setInstance(userFactory);
-        ChannelFactory.instance = channelFactory;
+	public static ChannelPipelineFactory initialize(final SSLContext sslContext, final boolean clientMode, final PacketHandler packetHandler, final Packet.Side side, final UserFactory userFactory, final ChannelFactory channelFactory) {
+		Packet.initialize(side);
+		UserFactory.setInstance(userFactory);
+		ChannelFactory.instance = channelFactory;
 
-        return new ChannelPipelineFactory() {
-            @Override
-            public ChannelPipeline getPipeline() throws Exception {
-                ChannelPipeline pipeline = Channels.pipeline();
+		return new ChannelPipelineFactory() {
+			@Override
+			public ChannelPipeline getPipeline() throws Exception {
+				ChannelPipeline pipeline = Channels.pipeline();
 
-                SSLEngine sslEngine = sslContext.createSSLEngine();
-                sslEngine.setUseClientMode(clientMode);
-                pipeline.addLast("ssl", new SslHandler(sslEngine));
-                pipeline.addLast("framer", new PacketReplayingDecoder());
-                pipeline.addLast("handler", packetHandler);
+				SSLEngine sslEngine = sslContext.createSSLEngine();
+				sslEngine.setUseClientMode(clientMode);
+				pipeline.addLast("ssl", new SslHandler(sslEngine));
+				pipeline.addLast("framer", new PacketReplayingDecoder());
+				pipeline.addLast("handler", packetHandler);
 
-                return pipeline;
-            }
-        };
-    }
+				return pipeline;
+			}
+		};
+	}
 }

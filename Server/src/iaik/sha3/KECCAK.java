@@ -18,30 +18,29 @@ package iaik.sha3;
 
 /**
  * Super class for KECCAK implementations.
- * 
+ *
  * @author Christian Hanser
  */
 abstract class KECCAK extends AbstractMessageDigestWrapper {
 
-  /**
-   * Create a new instance.
-   * 
-   * @param digestLength
-   *          the desired digest length
-   */
-  public KECCAK(int digestLength, int rate) {
-    super(getDigest(digestLength, rate));
-  }
+	/**
+	 * Create a new instance.
+	 *
+	 * @param digestLength the desired digest length
+	 */
+	public KECCAK(int digestLength, int rate) {
+		super(getDigest(digestLength, rate));
+	}
 
-  /**
-   * Returns the appropriate hash implementation (either for 32bit or 64bit
-   * VMs).
-   * 
-   * @return the according raw hash
-   */
-  private static RawKECCAK getDigest(int digestLength, int rate) {
-    return (JVM_DATA_MODEL == 32) ? new RawKECCAK32Bit(digestLength, rate) : new RawKECCAK64Bit(
-        digestLength, rate);
-  }
+	/**
+	 * Returns the appropriate hash implementation (either for 32bit or 64bit
+	 * VMs).
+	 *
+	 * @return the according raw hash
+	 */
+	private static RawKECCAK getDigest(int digestLength, int rate) {
+		return (JVM_DATA_MODEL == 32) ? new RawKECCAK32Bit(digestLength, rate) : new RawKECCAK64Bit(
+				digestLength, rate);
+	}
 
 }

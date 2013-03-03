@@ -15,40 +15,40 @@ import java.security.Security;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public static void main(String[] args) {
-        SSLContext sslContext;
+	public static void main(String[] args) {
+		SSLContext sslContext;
 
-        try {
-            String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
-            if(algorithm == null) {
-                algorithm = "SunX509";
-            }
+		try {
+			String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
+			if (algorithm == null) {
+				algorithm = "SunX509";
+			}
 
-            KeyStore ks = KeyStore.getInstance("JKS");
-            ks.load(new FileInputStream("server.jks"), "secret".toCharArray());
+			KeyStore ks = KeyStore.getInstance("JKS");
+			ks.load(new FileInputStream("server.jks"), "secret".toCharArray());
 
-            // Set up key manager factory to use our key store
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance(algorithm);
-            kmf.init(ks, "secret".toCharArray());
+			// Set up key manager factory to use our key store
+			KeyManagerFactory kmf = KeyManagerFactory.getInstance(algorithm);
+			kmf.init(ks, "secret".toCharArray());
 
-            // Initialize the SSLContext to work with our key managers.
-            sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(kmf.getKeyManagers(), null, null);
-        } catch (Exception e) {
-            throw new Error("Failed to initialize the server-side SSLContext", e);
-        }
+			// Initialize the SSLContext to work with our key managers.
+			sslContext = SSLContext.getInstance("TLS");
+			sslContext.init(kmf.getKeyManagers(), null, null);
+		} catch (Exception e) {
+			throw new Error("Failed to initialize the server-side SSLContext", e);
+		}
 
-        ChannelPipelineFactory channelPipelineFactory = ChatLib.initialize(sslContext, false, new ServerPacketHandler(), Packet.Side.CLIENT_TO_SERVER, new ServerUserFactory(), new ServerChannelFactory());
+		ChannelPipelineFactory channelPipelineFactory = ChatLib.initialize(sslContext, false, new ServerPacketHandler(), Packet.Side.CLIENT_TO_SERVER, new ServerUserFactory(), new ServerChannelFactory());
 
-        ServerBootstrap serverBootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
-        serverBootstrap.setPipelineFactory(channelPipelineFactory);
-        serverBootstrap.setOption("child.tcpNoDelay", true);
-        serverBootstrap.setOption("child.keepAlive", true);
+		ServerBootstrap serverBootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool()));
+		serverBootstrap.setPipelineFactory(channelPipelineFactory);
+		serverBootstrap.setOption("child.tcpNoDelay", true);
+		serverBootstrap.setOption("child.keepAlive", true);
 
-        final int port = 13137;
+		final int port = 13137;
 
-        serverBootstrap.bind(new InetSocketAddress(port));
+		serverBootstrap.bind(new InetSocketAddress(port));
 
-        System.out.println("[NET] Server listening on port " + port);
-    }
+		System.out.println("[NET] Server listening on port " + port);
+	}
 }

@@ -18,7 +18,7 @@ package iaik.sha3;
 
 /**
  * This class implements the BLAKE message digest algorithm.
- * <p>
+ * <p/>
  * A message digest algorithm represents the functionality of an one-way hash
  * function for computing a fixed sized data value (message digest, hash) from
  * input data of arbitrary size. The length of the resulting hash value usually
@@ -28,10 +28,10 @@ package iaik.sha3;
  * Furthermore, a proper hash function should avoid any collision, meaning that
  * it has to be hard to find two different messages producing the same hash
  * value.
- * <p>
+ * <p/>
  * The <i>BLAKE-384</i> message digest algorithm produces a 384-bit hash-value
  * of the given input data.
- * <p>
+ * <p/>
  * This class extends the <code>java.security.MessageDigest</code> class and
  * applications should use one of the <code>getInstance</code> methods presented
  * there to create a MessageDigest-BLAKE object. Generally, an application
@@ -40,39 +40,39 @@ package iaik.sha3;
  * <ul>
  * <li>First an instance of the desired message digest algorithm has to be
  * created using a proper <code>getInstance</code> method, e.g.:
- * <p>
+ * <p/>
  * <blockquote>
- * 
+ * <p/>
  * <pre>
  * MessageDigest BLAKE = MessageDigest.getInstance(&quot;BLAKE384&quot;);
  * </pre>
- * 
+ * <p/>
  * </blockquote>
- * <p>
+ * <p/>
  * <li>Second, the data to be hashed is supplied to the MessageDigest object
  * just created by one or more calls to one of the <code>update</code> methods,
  * e.g: <br>
  * <blockquote>
- * 
+ * <p/>
  * <PRE>
- *     BLAKE.update(m1);
- *     BLAKE.update(m2);
- *     ...
+ * BLAKE.update(m1);
+ * BLAKE.update(m2);
+ * ...
  * </PRE>
- * 
+ * <p/>
  * </blockquote>
- * <p>
+ * <p/>
  * <li>Finally, the hash value can be computed using one of the
  * <code>digest</code> methods: <br>
  * <blockquote>
- * 
+ * <p/>
  * <pre>
  * byte[] hash_value = BLAKE.digest();
  * </pre>
- * 
+ * <p/>
  * </blockquote>
  * </ul>
- * <p>
+ * <p/>
  * There are several ways for combining <code>update</code> and
  * <code>digest</code> methods for computing a message digest. Since this class
  * implements the <code>Cloneable</code> interface, BLAKE MessageDigest objects
@@ -80,30 +80,29 @@ package iaik.sha3;
  * http://java.sun.com/products/JDK/1.2/docs/guide/security/CryptoSpec.html>
  * http
  * ://java.sun.com/products/JDK/1.2/docs/guide/security/CryptoSpec.html</a>).
- * <p>
+ * <p/>
  * When the hash value successfully has been computed, the BLAKE MessageDigest
  * object automatically resets for being able to be supplied with new data to be
  * hashed..
- * 
- * @see java.security.MessageDigest
- * 
+ *
  * @author Christian Hanser
+ * @see java.security.MessageDigest
  */
 public final class BLAKE384 extends BLAKE64Bit {
 
-  // some constants
-  private static final int DIGEST_LENGTH = 48;
-  private static final long[] IV = { 0xCBBB9D5DC1059ED8L, 0x629A292A367CD507L, 0x9159015A3070DD17L,
-      0x152FECD8F70E5939L, 0x67332667FFC00B31L, 0x8EB44A8768581511L, 0xDB0C2E0D64F98FA7L,
-      0x47B5481DBEFA4FA4L };
+	// some constants
+	private static final int DIGEST_LENGTH = 48;
+	private static final long[] IV = {0xCBBB9D5DC1059ED8L, 0x629A292A367CD507L, 0x9159015A3070DD17L,
+			0x152FECD8F70E5939L, 0x67332667FFC00B31L, 0x8EB44A8768581511L, 0xDB0C2E0D64F98FA7L,
+			0x47B5481DBEFA4FA4L};
 
-  private static final byte END_OF_PADDING_BYTE = 0;
+	private static final byte END_OF_PADDING_BYTE = 0;
 
-  /**
-   * Default constructor.
-   */
-  public BLAKE384() {
-    super(DIGEST_LENGTH, IV, END_OF_PADDING_BYTE);
-  }
+	/**
+	 * Default constructor.
+	 */
+	public BLAKE384() {
+		super(DIGEST_LENGTH, IV, END_OF_PADDING_BYTE);
+	}
 
 }

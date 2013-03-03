@@ -5,8 +5,8 @@ import me.draconia.chat.types.MessageContext;
 import me.draconia.chat.types.User;
 
 public abstract class BaseClientCommand extends BaseCommand {
-    @Override
-    public final void commandError(User user, MessageContext messageContext, Exception error) {
-        FormMain.instance.getChatTab(messageContext).addText("[ERROR] " + error.getMessage());
-    }
+	@Override
+	public final void commandError(User user, MessageContext messageContext, Exception error) {
+		FormMain.instance.getChatTab(messageContext).addText("[ERROR] " + error.getMessage());
+	}
 }

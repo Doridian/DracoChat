@@ -10,26 +10,26 @@ import org.jboss.netty.buffer.ChannelBuffer;
 @Packet.PacketID(Packets.CHANNEL_USER_SNAPSHOT)
 @Packet.PacketSide(Packet.Side.SERVER_TO_CLIENT)
 public class PacketChannelUserSnapshotResponse extends Packet {
-    public Channel channel;
-    public User[] users;
+	public Channel channel;
+	public User[] users;
 
-    @Override
-    protected void decode(ChannelBuffer channelBuffer) {
-        channel = ChannelFactory.instance.createFromName(readString(channelBuffer));
-        byte count = channelBuffer.readByte();
-        users = new User[count];
-        for(byte i=0;i<count;i++) {
-            users[i] = UserFactory.instance.getFromLogin(readString(channelBuffer));
-        }
-    }
+	@Override
+	protected void decode(ChannelBuffer channelBuffer) {
+		channel = ChannelFactory.instance.createFromName(readString(channelBuffer));
+		byte count = channelBuffer.readByte();
+		users = new User[count];
+		for (byte i = 0; i < count; i++) {
+			users[i] = UserFactory.instance.getFromLogin(readString(channelBuffer));
+		}
+	}
 
-    @Override
-    protected void encode(ChannelBuffer channelBuffer) {
-        writeString(channelBuffer, channel.name);
-        byte count = (byte)users.length;
-        channelBuffer.writeByte(count);
-        for(byte i=0;i<count;i++) {
-            writeString(channelBuffer, users[i].login);
-        }
-    }
+	@Override
+	protected void encode(ChannelBuffer channelBuffer) {
+		writeString(channelBuffer, channel.name);
+		byte count = (byte) users.length;
+		channelBuffer.writeByte(count);
+		for (byte i = 0; i < count; i++) {
+			writeString(channelBuffer, users[i].login);
+		}
+	}
 }

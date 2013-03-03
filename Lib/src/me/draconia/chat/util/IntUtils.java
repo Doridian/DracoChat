@@ -20,7 +20,7 @@ public class IntUtils {
 		if (array.length <= start) return def;
 		if (array.length <= start + 1) return array[start];
 		StringBuilder ret = new StringBuilder(array[start]);
-		for(int i=start+1;i<array.length;i++) {
+		for (int i = start + 1; i < array.length; i++) {
 			ret.append(' ');
 			ret.append(array[i]);
 		}
@@ -39,15 +39,14 @@ public class IntUtils {
 			final URL location = codeSource.getLocation();
 			final URI uri = location.toURI();
 			file = new File(uri);
-		}
-		catch (URISyntaxException e) {
+		} catch (URISyntaxException e) {
 			e.printStackTrace();
 			return ret;
 		}
 		final String[] fileList;
 
 		if (file.isDirectory() || (file.isFile() && !file.getName().endsWith(".jar"))) {
-			String packageFolderName = "/"+packageName.replace('.','/');
+			String packageFolderName = "/" + packageName.replace('.', '/');
 
 			URL url = baseClass.getResource(packageFolderName);
 			if (url == null)
@@ -59,19 +58,17 @@ public class IntUtils {
 
 			// Get the list of the files contained in the package
 			fileList = directory.list();
-		}
-		else if (file.isFile()) {
+		} else if (file.isFile()) {
 			final List<String> tmp = new ArrayList<String>();
 			final JarFile jarFile;
 			try {
 				jarFile = new JarFile(file);
-			}
-			catch (IOException e) {
+			} catch (IOException e) {
 				e.printStackTrace();
 				return ret;
 			}
 
-			Pattern pathPattern = Pattern.compile(packageName.replace('.','/')+"/(.+\\.class)");
+			Pattern pathPattern = Pattern.compile(packageName.replace('.', '/') + "/(.+\\.class)");
 			final Enumeration<JarEntry> entries = jarFile.entries();
 			while (entries.hasMoreElements()) {
 				Matcher matcher = pathPattern.matcher(entries.nextElement().getName());
@@ -82,8 +79,7 @@ public class IntUtils {
 			}
 
 			fileList = tmp.toArray(new String[tmp.size()]);
-		}
-		else {
+		} else {
 			return ret;
 		}
 
@@ -97,17 +93,15 @@ public class IntUtils {
 			// removes the .class extension
 			String classname = matcher.group(1);
 			try {
-				final String qualifiedName = packageName+"."+classname.replace('/', '.');
+				final String qualifiedName = packageName + "." + classname.replace('/', '.');
 				final Class<?> classObject = Class.forName(qualifiedName);
 				final Class<? extends T> classT = classObject.asSubclass(baseClass);
 
 				// Try to create an instance of the object
 				ret.add(classT);
-			}
-			catch (ClassCastException e) {
+			} catch (ClassCastException e) {
 				continue;
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}

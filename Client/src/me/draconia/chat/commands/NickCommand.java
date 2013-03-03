@@ -7,10 +7,10 @@ import me.draconia.chat.types.User;
 
 @BaseCommand.Names("nick")
 public class NickCommand extends BaseClientCommand {
-    @Override
-    public void run(User user, MessageContext messageContext, String[] args, String argStr) throws Exception {
-        PacketNickset packetNickset = new PacketNickset();
-        packetNickset.nickname = argStr;
-        ClientLib.sendPacket(packetNickset);
-    }
+	@Override
+	public void run(User user, MessageContext messageContext, String[] args, String argStr) throws Exception {
+		PacketNickset packetNickset = new PacketNickset();
+		packetNickset.nickname = argStr;
+		ClientLib.sendPacket(packetNickset);
+	}
 }

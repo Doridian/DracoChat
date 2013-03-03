@@ -23,62 +23,61 @@ import java.security.MessageDigest;
  * intended to be used as super class for either 32-bit or 64-bit optimized
  * implementations. It provides information about the underlying JVM data model,
  * so that sub-classes can choose the optimized implementation.
- * 
+ *
  * @author Christian Hanser
  */
 abstract class AbstractMessageDigestWrapper extends MessageDigest {
 
-  final static int JVM_DATA_MODEL = Util.getJVMDataMode();
+	final static int JVM_DATA_MODEL = Util.getJVMDataMode();
 
-  private final AbstractMessageDigest delegate_;
-  private final int digestLength_;
+	private final AbstractMessageDigest delegate_;
+	private final int digestLength_;
 
-  /**
-   * Constructs a new instance.
-   * 
-   * @param delegate
-   *          an object of the actual digest implementation
-   */
-  AbstractMessageDigestWrapper(AbstractMessageDigest delegate) {
-    super(delegate.getAlgorithm());
-    delegate_ = delegate;
-    digestLength_ = delegate.getDigestLength();
-  }
+	/**
+	 * Constructs a new instance.
+	 *
+	 * @param delegate an object of the actual digest implementation
+	 */
+	AbstractMessageDigestWrapper(AbstractMessageDigest delegate) {
+		super(delegate.getAlgorithm());
+		delegate_ = delegate;
+		digestLength_ = delegate.getDigestLength();
+	}
 
-  @Override
-  protected int engineGetDigestLength() {
-    return digestLength_;
-  }
+	@Override
+	protected int engineGetDigestLength() {
+		return digestLength_;
+	}
 
-  protected void engineCompress(byte[] input, int offset) {
-    delegate_.engineCompress(input, offset);
-  }
+	protected void engineCompress(byte[] input, int offset) {
+		delegate_.engineCompress(input, offset);
+	}
 
-  protected void doPadding() {
-    delegate_.doPadding();
-  }
+	protected void doPadding() {
+		delegate_.doPadding();
+	}
 
-  protected void engineDigest(byte[] output, int offset) {
-    delegate_.engineGetDigest(output, offset);
-  }
+	protected void engineDigest(byte[] output, int offset) {
+		delegate_.engineGetDigest(output, offset);
+	}
 
-  @Override
-  protected byte[] engineDigest() {
-    return delegate_.engineDigest();
-  }
+	@Override
+	protected byte[] engineDigest() {
+		return delegate_.engineDigest();
+	}
 
-  @Override
-  protected void engineUpdate(byte input) {
-    delegate_.engineUpdate(input);
-  }
+	@Override
+	protected void engineUpdate(byte input) {
+		delegate_.engineUpdate(input);
+	}
 
-  @Override
-  protected void engineUpdate(byte[] input, int offset, int len) {
-    delegate_.engineUpdate(input, offset, len);
-  }
+	@Override
+	protected void engineUpdate(byte[] input, int offset, int len) {
+		delegate_.engineUpdate(input, offset, len);
+	}
 
-  @Override
-  protected void engineReset() {
-    delegate_.engineReset();
-  }
+	@Override
+	protected void engineReset() {
+		delegate_.engineReset();
+	}
 }

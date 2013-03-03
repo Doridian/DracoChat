@@ -18,49 +18,47 @@ package iaik.sha3;
 
 /**
  * Base class for 32 and 64 Bit Groestl variants.
- * 
+ *
  * @author Christian Hanser
  */
 abstract class RawGroestl extends AbstractMessageDigest {
 
-  final int blockBitLength_;
-  byte[] bits_ = new byte[8];
+	final int blockBitLength_;
+	byte[] bits_ = new byte[8];
 
-  /**
-   * Constructs a new instance.
-   * 
-   * @param digestLength_
-   *          the hash length in bytes
-   * @param blockSize_
-   *          the block size in bytes
-   */
-  RawGroestl(int digestLength, int blockSize) {
-    super("Groestl" + (digestLength << 3), digestLength, blockSize);
+	/**
+	 * Constructs a new instance.
+	 *
+	 * @param digestLength_ the hash length in bytes
+	 * @param blockSize_    the block size in bytes
+	 */
+	RawGroestl(int digestLength, int blockSize) {
+		super("Groestl" + (digestLength << 3), digestLength, blockSize);
 
-    blockBitLength_ = blockSize << 3;
-  }
+		blockBitLength_ = blockSize << 3;
+	}
 
-  @Override
-  protected void doPadding() {
-    final long bitcount = count_ << 3;
-    // emulate the modulo operator, as % calculates only the remainder
-    final int w = (((int) (-bitcount - 65) % blockBitLength_) + blockBitLength_) % blockBitLength_;
-    final long length = (bitcount + w + 65) / blockBitLength_;
+	@Override
+	protected void doPadding() {
+		final long bitcount = count_ << 3;
+		// emulate the modulo operator, as % calculates only the remainder
+		final int w = (((int) (-bitcount - 65) % blockBitLength_) + blockBitLength_) % blockBitLength_;
+		final long length = (bitcount + w + 65) / blockBitLength_;
 
-    for (int i = 0; i < bits_.length; i++) {
-      bits_[7 - i] = (byte) (length >>> (i << 3));
-    }
+		for (int i = 0; i < bits_.length; i++) {
+			bits_[7 - i] = (byte) (length >>> (i << 3));
+		}
 
-    // w + 1, due to the leading 1 is contained in padding_
-    engineUpdate(padding_, 0, (w + 1) >>> 3);
-    engineUpdate(bits_, 0, bits_.length);
-  }
+		// w + 1, due to the leading 1 is contained in padding_
+		engineUpdate(padding_, 0, (w + 1) >>> 3);
+		engineUpdate(bits_, 0, bits_.length);
+	}
 
-  @Override
-  protected void engineReset() {
-    count_ = 0;
-    Util.zeroBlock(bits_);
-    Util.zeroBlock(buffer_);
-  }
+	@Override
+	protected void engineReset() {
+		count_ = 0;
+		Util.zeroBlock(bits_);
+		Util.zeroBlock(buffer_);
+	}
 
 }

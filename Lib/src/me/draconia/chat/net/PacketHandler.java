@@ -6,10 +6,10 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 
 public abstract class PacketHandler extends SimpleChannelHandler {
-    @Override
-    public final void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-        packetReceived(ctx, (Packet)e.getMessage());
-    }
+	@Override
+	public final void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+		packetReceived(ctx, (Packet) e.getMessage());
+	}
 
-    public abstract void packetReceived(ChannelHandlerContext ctx, Packet packet) throws Exception;
+	public abstract void packetReceived(ChannelHandlerContext ctx, Packet packet) throws Exception;
 }

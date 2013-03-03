@@ -18,7 +18,7 @@ package iaik.sha3;
 
 /**
  * This class implements the JH message digest algorithm.
- * <p>
+ * <p/>
  * A message digest algorithm represents the functionality of an one-way hash
  * function for computing a fixed sized data value (message digest, hash) from
  * input data of arbitrary size. The length of the resulting hash value usually
@@ -28,10 +28,10 @@ package iaik.sha3;
  * Furthermore, a proper hash function should avoid any collision, meaning that
  * it has to be hard to find two different messages producing the same hash
  * value.
- * <p>
+ * <p/>
  * The <i>JH-256</i> message digest algorithm produces a 256-bit hash-value of
  * the given input data.
- * <p>
+ * <p/>
  * This class extends the <code>java.security.MessageDigest</code> class and
  * applications should use one of the <code>getInstance</code> methods presented
  * there to create a MessageDigest-JH object. Generally, an application wishing
@@ -39,39 +39,39 @@ package iaik.sha3;
  * <ul>
  * <li>First an instance of the desired message digest algorithm has to be
  * created using a proper <code>getInstance</code> method, e.g.:
- * <p>
+ * <p/>
  * <blockquote>
- * 
+ * <p/>
  * <pre>
  * MessageDigest JH = MessageDigest.getInstance(&quot;JH256&quot;);
  * </pre>
- * 
+ * <p/>
  * </blockquote>
- * <p>
+ * <p/>
  * <li>Second, the data to be hashed is supplied to the MessageDigest object
  * just created by one or more calls to one of the <code>update</code> methods,
  * e.g: <br>
  * <blockquote>
- * 
+ * <p/>
  * <PRE>
- *     JH.update(m1);
- *     JH.update(m2);
- *     ...
+ * JH.update(m1);
+ * JH.update(m2);
+ * ...
  * </PRE>
- * 
+ * <p/>
  * </blockquote>
- * <p>
+ * <p/>
  * <li>Finally, the hash value can be computed using one of the
  * <code>digest</code> methods: <br>
  * <blockquote>
- * 
+ * <p/>
  * <pre>
  * byte[] hash_value = JH.digest();
  * </pre>
- * 
+ * <p/>
  * </blockquote>
  * </ul>
- * <p>
+ * <p/>
  * There are several ways for combining <code>update</code> and
  * <code>digest</code> methods for computing a message digest. Since this class
  * implements the <code>Cloneable</code> interface, JH MessageDigest objects may
@@ -79,40 +79,39 @@ package iaik.sha3;
  * http://java.sun.com/products/JDK/1.2/docs/guide/security/CryptoSpec.html>
  * http
  * ://java.sun.com/products/JDK/1.2/docs/guide/security/CryptoSpec.html</a>).
- * <p>
+ * <p/>
  * When the hash value successfully has been computed, the JH MessageDigest
  * object automatically resets for being able to be supplied with new data to be
  * hashed..
- * 
- * @see java.security.MessageDigest
- * 
+ *
  * @author Christian Hanser
+ * @see java.security.MessageDigest
  */
 public final class JH256 extends JH {
 
-  // some constants
-  private static final int BLOCK_SIZE = 64;
-  private static final int DIGEST_LENGTH = 32;
+	// some constants
+	private static final int BLOCK_SIZE = 64;
+	private static final int DIGEST_LENGTH = 32;
 
-  private final static byte[] IV = { (byte) 0xeb, (byte) 0x98, (byte) 0xa3, 0x41, 0x2c, 0x20,
-      (byte) 0xd3, (byte) 0xeb, (byte) 0x92, (byte) 0xcd, (byte) 0xbe, 0x7b, (byte) 0x9c,
-      (byte) 0xb2, 0x45, (byte) 0xc1, 0x1c, (byte) 0x93, 0x51, (byte) 0x91, 0x60, (byte) 0xd4,
-      (byte) 0xc7, (byte) 0xfa, 0x26, 0x0, (byte) 0x82, (byte) 0xd6, 0x7e, 0x50, (byte) 0x8a,
-      (byte) 0x3, (byte) 0xa4, 0x23, (byte) 0x9e, 0x26, 0x77, 0x26, (byte) 0xb9, 0x45, (byte) 0xe0,
-      (byte) 0xfb, 0x1a, 0x48, (byte) 0xd4, 0x1a, (byte) 0x94, 0x77, (byte) 0xcd, (byte) 0xb5,
-      (byte) 0xab, 0x26, 0x2, 0x6b, 0x17, 0x7a, 0x56, (byte) 0xf0, 0x24, 0x42, 0xf, (byte) 0xff,
-      0x2f, (byte) 0xa8, 0x71, (byte) 0xa3, (byte) 0x96, (byte) 0x89, 0x7f, 0x2e, 0x4d, 0x75, 0x1d,
-      0x14, 0x49, 0x8, (byte) 0xf7, 0x7d, (byte) 0xe2, 0x62, 0x27, 0x76, (byte) 0x95, (byte) 0xf7,
-      0x76, 0x24, (byte) 0x8f, (byte) 0x94, (byte) 0x87, (byte) 0xd5, (byte) 0xb6, 0x57, 0x47,
-      (byte) 0x80, 0x29, 0x6c, 0x5c, 0x5e, 0x27, 0x2d, (byte) 0xac, (byte) 0x8e, 0xd, 0x6c, 0x51,
-      (byte) 0x84, 0x50, (byte) 0xc6, 0x57, 0x5, 0x7a, 0xf, 0x7b, (byte) 0xe4, (byte) 0xd3, 0x67,
-      0x70, 0x24, 0x12, (byte) 0xea, (byte) 0x89, (byte) 0xe3, (byte) 0xab, 0x13, (byte) 0xd3,
-      0x1c, (byte) 0xd7, 0x69 };
+	private final static byte[] IV = {(byte) 0xeb, (byte) 0x98, (byte) 0xa3, 0x41, 0x2c, 0x20,
+			(byte) 0xd3, (byte) 0xeb, (byte) 0x92, (byte) 0xcd, (byte) 0xbe, 0x7b, (byte) 0x9c,
+			(byte) 0xb2, 0x45, (byte) 0xc1, 0x1c, (byte) 0x93, 0x51, (byte) 0x91, 0x60, (byte) 0xd4,
+			(byte) 0xc7, (byte) 0xfa, 0x26, 0x0, (byte) 0x82, (byte) 0xd6, 0x7e, 0x50, (byte) 0x8a,
+			(byte) 0x3, (byte) 0xa4, 0x23, (byte) 0x9e, 0x26, 0x77, 0x26, (byte) 0xb9, 0x45, (byte) 0xe0,
+			(byte) 0xfb, 0x1a, 0x48, (byte) 0xd4, 0x1a, (byte) 0x94, 0x77, (byte) 0xcd, (byte) 0xb5,
+			(byte) 0xab, 0x26, 0x2, 0x6b, 0x17, 0x7a, 0x56, (byte) 0xf0, 0x24, 0x42, 0xf, (byte) 0xff,
+			0x2f, (byte) 0xa8, 0x71, (byte) 0xa3, (byte) 0x96, (byte) 0x89, 0x7f, 0x2e, 0x4d, 0x75, 0x1d,
+			0x14, 0x49, 0x8, (byte) 0xf7, 0x7d, (byte) 0xe2, 0x62, 0x27, 0x76, (byte) 0x95, (byte) 0xf7,
+			0x76, 0x24, (byte) 0x8f, (byte) 0x94, (byte) 0x87, (byte) 0xd5, (byte) 0xb6, 0x57, 0x47,
+			(byte) 0x80, 0x29, 0x6c, 0x5c, 0x5e, 0x27, 0x2d, (byte) 0xac, (byte) 0x8e, 0xd, 0x6c, 0x51,
+			(byte) 0x84, 0x50, (byte) 0xc6, 0x57, 0x5, 0x7a, 0xf, 0x7b, (byte) 0xe4, (byte) 0xd3, 0x67,
+			0x70, 0x24, 0x12, (byte) 0xea, (byte) 0x89, (byte) 0xe3, (byte) 0xab, 0x13, (byte) 0xd3,
+			0x1c, (byte) 0xd7, 0x69};
 
-  /**
-   * Default constructor.
-   */
-  public JH256() {
-    super(DIGEST_LENGTH, BLOCK_SIZE, IV);
-  }
+	/**
+	 * Default constructor.
+	 */
+	public JH256() {
+		super(DIGEST_LENGTH, BLOCK_SIZE, IV);
+	}
 }

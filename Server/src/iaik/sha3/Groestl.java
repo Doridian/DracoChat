@@ -18,30 +18,29 @@ package iaik.sha3;
 
 /**
  * Super class for Groestl implementations.
- * 
+ *
  * @author Christian Hanser
  */
 abstract class Groestl extends AbstractMessageDigestWrapper {
 
-  /**
-   * Create a new instance.
-   * 
-   * @param digestLength
-   *          the desired digest length
-   */
-  public Groestl(int digestLength) {
-    super(getDigest(digestLength));
-  }
+	/**
+	 * Create a new instance.
+	 *
+	 * @param digestLength the desired digest length
+	 */
+	public Groestl(int digestLength) {
+		super(getDigest(digestLength));
+	}
 
-  /**
-   * Returns the appropriate hash implementation (either for 32bit or 64bit
-   * VMs).
-   * 
-   * @return the according raw hash
-   */
-  protected static RawGroestl getDigest(int digestLength) {
-    return (JVM_DATA_MODEL == 32) ? new RawGroestl32BitShort(digestLength)
-        : new RawGroestl64BitShort(digestLength);
-  }
+	/**
+	 * Returns the appropriate hash implementation (either for 32bit or 64bit
+	 * VMs).
+	 *
+	 * @return the according raw hash
+	 */
+	protected static RawGroestl getDigest(int digestLength) {
+		return (JVM_DATA_MODEL == 32) ? new RawGroestl32BitShort(digestLength)
+				: new RawGroestl64BitShort(digestLength);
+	}
 
 }

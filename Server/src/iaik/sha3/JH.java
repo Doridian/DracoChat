@@ -18,34 +18,31 @@ package iaik.sha3;
 
 /**
  * Super class for JH implementations.
- * 
+ *
  * @author Christian Hanser
  */
 abstract class JH extends AbstractMessageDigestWrapper {
 
-  /**
-   * Create a new instance.
-   * 
-   * @param digestLength
-   *          the desired digest length
-   * @param blockSize
-   *          the corresponding block size
-   * @param iv
-   *          the initialization vector
-   */
-  public JH(int digestLength, int blockSize, byte[] iv) {
-    super(getDigest(digestLength, blockSize, iv));
-  }
+	/**
+	 * Create a new instance.
+	 *
+	 * @param digestLength the desired digest length
+	 * @param blockSize    the corresponding block size
+	 * @param iv           the initialization vector
+	 */
+	public JH(int digestLength, int blockSize, byte[] iv) {
+		super(getDigest(digestLength, blockSize, iv));
+	}
 
-  /**
-   * Returns the appropriate hash implementation (either for 32bit or 64bit
-   * VMs).
-   * 
-   * @return the according raw hash
-   */
-  protected static RawJH getDigest(int digestLength, int blockSize, byte[] iv) {
-    return (JVM_DATA_MODEL == 32) ? new RawJH32Bit(digestLength, blockSize, iv) : new RawJH64Bit(
-        digestLength, blockSize, iv);
-  }
+	/**
+	 * Returns the appropriate hash implementation (either for 32bit or 64bit
+	 * VMs).
+	 *
+	 * @return the according raw hash
+	 */
+	protected static RawJH getDigest(int digestLength, int blockSize, byte[] iv) {
+		return (JVM_DATA_MODEL == 32) ? new RawJH32Bit(digestLength, blockSize, iv) : new RawJH64Bit(
+				digestLength, blockSize, iv);
+	}
 
 }
