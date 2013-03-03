@@ -89,11 +89,6 @@ public class ChatTab {
 	}
 
 	public void messageReceived(Message message) {
-		int index = FormMain.instance.chatTabs.indexOfComponent(chatTabPanel);
-		if(FormMain.instance.chatTabs.getSelectedIndex() != index) {
-			FormMain.instance.chatTabs.setBackgroundAt(index, Color.RED);
-		}
-
 		if (message instanceof TextMessage) {
 			TextMessage textMessage = (TextMessage) message;
 			if (message.from.equals(User.getSYSTEM())) {
@@ -117,6 +112,11 @@ public class ChatTab {
 	}
 
 	public void addText(String text) {
+		int index = FormMain.instance.chatTabs.indexOfComponent(chatTabPanel);
+		if(FormMain.instance.chatTabs.getSelectedIndex() != index) {
+			FormMain.instance.chatTabs.setBackgroundAt(index, Color.RED);
+		}
+
 		text = chatLog.getText() + text + "\r\n";
 		chatLog.setText(text);
 
