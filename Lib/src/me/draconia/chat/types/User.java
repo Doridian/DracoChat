@@ -5,6 +5,8 @@ import java.io.Serializable;
 public abstract class User implements MessageContext, Serializable {
 	public static final long serialVersionUID = -1L;
 
+	public static final byte STATE_BUSY = 3;
+	public static final byte STATE_AWAY = 2;
 	public static final byte STATE_ONLINE = 1;
 	public static final byte STATE_OFFLINE = 0;
 

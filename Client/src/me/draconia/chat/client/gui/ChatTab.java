@@ -8,6 +8,7 @@ import me.draconia.chat.types.*;
 import javax.swing.*;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -79,10 +80,20 @@ public class ChatTab {
 		message.content = text;
 		message.type = TextMessage.TYPE_CHAT;
 		message.context = relatedContext;
-		ClientLib.sendEncryptableMessage(message);
+
+		if(text.charAt(0) == '/') {
+			ClientLib.sendMessage(message);
+		} else {
+			ClientLib.sendEncryptableMessage(message);
+		}
 	}
 
 	public void messageReceived(Message message) {
+		int index = FormMain.instance.chatTabs.indexOfComponent(chatTabPanel);
+		if(FormMain.instance.chatTabs.getSelectedIndex() != index) {
+			FormMain.instance.chatTabs.setBackgroundAt(index, Color.RED);
+		}
+
 		if (message instanceof TextMessage) {
 			TextMessage textMessage = (TextMessage) message;
 			if (message.from.equals(User.getSYSTEM())) {

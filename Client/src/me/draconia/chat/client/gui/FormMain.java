@@ -19,6 +19,8 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 
 import javax.net.ssl.SSLContext;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -28,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 public class FormMain {
-	private JTabbedPane chatTabs;
+	protected JTabbedPane chatTabs;
 	private JPanel rootPanel;
 
 	public static ClientBootstrap clientBootstrap;
@@ -46,6 +48,15 @@ public class FormMain {
 	public FormMain() {
 		instance = this;
 		genericChatTab = getChatTab(GenericContext.instance);
+
+		chatTabs.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				if(e.getSource() == chatTabs) {
+					chatTabs.setBackgroundAt(chatTabs.getSelectedIndex(), null);
+				}
+			}
+		});
 
 		runRefreshSubscriptionsThread = true;
 		refreshSubscriptionsThread = new Thread() {
