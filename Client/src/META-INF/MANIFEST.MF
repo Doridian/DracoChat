@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
+Class-Path: netty.jar bouncycastle.jar bouncycastle-ssl.jar JTattoo.jar
 Main-Class: me.draconia.chat.client.gui.FormMain
 

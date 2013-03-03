@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
-Class-Path: netty.jar
+Class-Path: netty.jar bouncycastle.jar bouncycastle-ssl.jar
 Main-Class: me.draconia.chat.server.Main
 
