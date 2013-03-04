@@ -2,6 +2,8 @@ package me.draconia.chat.client.gui;
 
 import me.draconia.chat.client.ClientLib;
 import me.draconia.chat.client.filetransfer.FileReceiver;
+import me.draconia.chat.client.filetransfer.FileSender;
+import me.draconia.chat.client.filetransfer.IntCodec;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.commands.BaseClientCommand;
 import me.draconia.chat.types.*;
@@ -30,7 +32,7 @@ public class ChatTab {
 
 	private final MessageContext relatedContext;
 
-	private FileReceiver fileReceiver;
+	private HashMap<Integer, FileReceiver> fileReceivers = new HashMap<Integer, FileReceiver>();
 
 	public ChatTab(MessageContext relatedContext) {
 		this.relatedContext = relatedContext;
@@ -107,12 +109,14 @@ public class ChatTab {
 		}
 	}
 
-	public void messageReceived(Message message) {
-		if(!FormMain.instance.rootFrame.isFocused()) {
-			Toolkit.getDefaultToolkit().beep();
-		}
+	private final IntCodec intCodec = new IntCodec();
 
+	public void messageReceived(Message message) {
 		if (message instanceof TextMessage) {
+			if(!FormMain.instance.rootFrame.isFocused()) {
+				Toolkit.getDefaultToolkit().beep();
+			}
+
 			TextMessage textMessage = (TextMessage) message;
 			if (message.from.equals(User.getSYSTEM())) {
 				addText(textMessage.content);
@@ -130,11 +134,31 @@ public class ChatTab {
 				}
 			}
 		} else if(message instanceof BinaryMessage) {
+			final BinaryMessage binaryMessage = (BinaryMessage)message;
 			if(message.type == BinaryMessage.TYPE_FILE_START) {
-				fileReceiver = new FileReceiver((BinaryMessage)message);
+				final int fileID = intCodec.toNum(binaryMessage.content, 0);
+				if(fileReceivers.containsKey(fileID))
+					return;
+
+				new Thread() {
+					@Override
+					public void run() {
+						try {
+							fileReceivers.put(fileID, new FileReceiver(binaryMessage));
+						} catch (Exception e) { }
+					}
+				}.start();
 			} else if(message.type == BinaryMessage.TYPE_FILE_DATA || message.type == BinaryMessage.TYPE_FILE_END) {
+				final int fileID = intCodec.toNum(binaryMessage.content, 0);
+				FileReceiver fileReceiver = fileReceivers.get(fileID);
 				if(fileReceiver != null)
-					fileReceiver.receivedMessage((BinaryMessage)message);
+					fileReceiver.receivedMessage(binaryMessage);
+
+				if(message.type == BinaryMessage.TYPE_FILE_END) {
+					fileReceivers.remove(fileID);
+				}
+			} else if(message.type == BinaryMessage.TYPE_FILE_START_RESPONSE) {
+				FileSender.fileTransferAckNackReceived(binaryMessage);
 			}
 		}
 	}

@@ -26,10 +26,14 @@ public class FileSender implements ChatTab.StatusTextHook {
 	private long pos = 0;
 	private long len;
 
+	private final int fileID;
+
 	private final PaddedBufferedBlockCipher cipher;
 	private KeyParameter aesSecretKey;
 
 	private static final SecureRandom secureRandom = new SecureRandom();
+
+	private boolean pending = true;
 
 	private class FileSenderChannelFutureListener implements ChannelFutureListener {
 		@Override
@@ -39,9 +43,14 @@ public class FileSender implements ChatTab.StatusTextHook {
 		}
 	}
 
+	private final FileSenderChannelFutureListener fileSenderChannelFutureListener = new FileSenderChannelFutureListener();
+
 	@Override
 	public String getStatusText() {
-		return "Sending " + file.getName() + " [" + ((int)((((float)pos) / ((float)len)) * 100)) + "%]";
+		if(pending)
+			return "Sending " + file.getName() + " [Pending]";
+		else
+			return "Sending " + file.getName() + " [" + ((int)((((float)pos) / ((float)len)) * 100)) + "%]";
 	}
 
 	private boolean boolFinished = false;
@@ -49,17 +58,61 @@ public class FileSender implements ChatTab.StatusTextHook {
 		return boolFinished;
 	}
 
-	private static final HashMap<ClientUser, FileSender> fileSenders = new HashMap<ClientUser, FileSender>();
+	private static class ClientUserInteger {
+		final ClientUser clientUser;
+		final int fileID;
+
+		private ClientUserInteger(ClientUser clientUser, int fileID) {
+			this.clientUser = clientUser;
+			this.fileID = fileID;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			ClientUserInteger that = (ClientUserInteger) o;
+
+			if (fileID != that.fileID) return false;
+			if (clientUser != null ? !clientUser.equals(that.clientUser) : that.clientUser != null) return false;
+
+			return true;
+		}
+
+		@Override
+		public int hashCode() {
+			int result = clientUser != null ? clientUser.hashCode() : 0;
+			result = 31 * result + fileID;
+			return result;
+		}
+	}
+
+	private static final HashMap<ClientUserInteger, FileSender> fileSenders = new HashMap<ClientUserInteger, FileSender>();
 	public static void sendFile(ClientUser clientUser, File file) {
-		FileSender fileSender;
+		FileSender fileSender = new FileSender(clientUser, file);
 		synchronized (fileSenders) {
-			if((fileSender = fileSenders.get(clientUser)) != null) {
-				if(!fileSender.isFinished()) {
-					throw new Error("Sorry, there is already a file transfer with that user in progress");
-				}
+			fileSenders.put(new ClientUserInteger(clientUser, fileSender.fileID), fileSender);
+		}
+	}
+
+	public static void fileTransferAckNackReceived(BinaryMessage binaryMessage) {
+		ClientUserInteger clientUserInteger = new ClientUserInteger((ClientUser)binaryMessage.from, new IntCodec().toNum(binaryMessage.content, 0));
+		boolean accepted = (binaryMessage.content[4] == 1);
+		synchronized (fileSenders) {
+			FileSender fileSender = fileSenders.get(clientUserInteger);
+			if(fileSender == null)
+				return;
+			fileSender.pending = false;
+			if(accepted) {
+				fileSender.kickFileTransfer();
+				FormMain.instance.getChatTab(fileSender.sendTo).addText("[FILE] Client accepted file " + fileSender.file.getName());
+			} else {
+				fileSenders.remove(clientUserInteger);
+				ChatTab chatTab = FormMain.instance.getChatTab(fileSender.sendTo);
+				chatTab.addText("[FILE] Client declined file " + fileSender.file.getName());
+				chatTab.removeStatusTextHook(fileSender);
 			}
-			fileSender = new FileSender(clientUser, file);
-			fileSenders.put(clientUser, fileSender);
 		}
 	}
 
@@ -69,6 +122,8 @@ public class FileSender implements ChatTab.StatusTextHook {
 
 		this.file = file;
 		this.sendTo = sendTo;
+
+		this.fileID = secureRandom.nextInt();
 
 		try {
 			this.fileInputStream = new FileInputStream(file);
@@ -86,6 +141,8 @@ public class FileSender implements ChatTab.StatusTextHook {
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 			DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
 
+			dataOutputStream.writeInt(fileID);
+
 			dataOutputStream.writeUTF(file.getName());
 
 			len = file.length();
@@ -98,7 +155,7 @@ public class FileSender implements ChatTab.StatusTextHook {
 			binaryMessage.content = byteArrayOutputStream.toByteArray();
 			dataOutputStream.close();
 
-			ClientLib.sendEncryptableMessage(binaryMessage, new FileSenderChannelFutureListener(), false);
+			ClientLib.sendEncryptableMessage(binaryMessage, false);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new Error("Wat?");
@@ -110,6 +167,18 @@ public class FileSender implements ChatTab.StatusTextHook {
 	private final LongCodec longCodec = new LongCodec();
 	private final IntCodec intCodec = new IntCodec();
 	private static final int PACKET_SIZE = 4096;
+
+	private void kickFileTransfer() {
+		new Thread() {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(10);
+				} catch (Exception e) { }
+				processFileTransfer();
+			}
+		}.start();
+	}
 
 	private void processFileTransfer() {
 		if(pos < len) {
@@ -130,22 +199,14 @@ public class FileSender implements ChatTab.StatusTextHook {
 		chatTab.removeStatusTextHook(this);
 	}
 
-	private final byte[] packetData = new byte[PACKET_SIZE + 32 + 8 + 8 + 16];
+	private final byte[] packetData = new byte[PACKET_SIZE + 32 + 8 + 8 + 4];
 	private final byte[] fileData = new byte[PACKET_SIZE];
 
 	private synchronized void sendFileData() {
 		try {
 			int readLen = fileInputStream.read(fileData, 0, PACKET_SIZE);
 			if(readLen < 1) {
-				new Thread() {
-					@Override
-					public void run() {
-						try {
-							Thread.sleep(10);
-						} catch (Exception e) { }
-						processFileTransfer();
-					}
-				}.start();
+				kickFileTransfer();
 				return;
 			}
 
@@ -156,9 +217,11 @@ public class FileSender implements ChatTab.StatusTextHook {
 			outputtedSize = cipher.processBytes(fileData, 0, readLen, encFileData, 0);
 			outputtedSize += cipher.doFinal(encFileData, outputtedSize);
 
-			System.arraycopy(encFileData, 0, packetData, 12, outputtedSize);
-			System.arraycopy(longCodec.toBytes(pos), 0, packetData, 0, 8);
-			System.arraycopy(intCodec.toBytes(outputtedSize), 0, packetData, 8, 4);
+			System.arraycopy(encFileData, 0, packetData, 16, outputtedSize);
+
+			System.arraycopy(intCodec.toBytes(fileID), 0, packetData, 0, 4);
+			System.arraycopy(longCodec.toBytes(pos), 0, packetData, 4, 8);
+			System.arraycopy(intCodec.toBytes(outputtedSize), 0, packetData, 12, 4);
 
 			pos += readLen;
 
@@ -168,7 +231,7 @@ public class FileSender implements ChatTab.StatusTextHook {
 			binaryMessage.type = BinaryMessage.TYPE_FILE_DATA;
 			binaryMessage.content = packetData;
 
-			ClientLib.sendMessage(binaryMessage, new FileSenderChannelFutureListener(), false);
+			ClientLib.sendMessage(binaryMessage, fileSenderChannelFutureListener, false);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new Error("Wat?");
@@ -180,7 +243,7 @@ public class FileSender implements ChatTab.StatusTextHook {
 		binaryMessage.context = sendTo;
 		binaryMessage.from = ClientLib.myUser;
 		binaryMessage.type = BinaryMessage.TYPE_FILE_END;
-		binaryMessage.content = new byte[0];
+		binaryMessage.content = intCodec.toBytes(fileID);
 		ClientLib.sendEncryptableMessage(binaryMessage, false);
 	}
 }
