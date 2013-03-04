@@ -15,7 +15,7 @@ import org.jboss.netty.channel.ChannelFutureListener;
 import java.net.InetSocketAddress;
 
 public class ClientLib {
-	protected static Channel clientDataChannel;
+	public static Channel clientDataChannel;
 
 	public static ChannelFuture sendPacket(Packet packet) {
 		if (clientDataChannel == null) return null;
@@ -39,36 +39,53 @@ public class ClientLib {
 
 	public static ClientUser myUser;
 
-	public static ChannelFuture sendEncryptableMessage(Message message) {
-		return sendEncryptableMessage(message, true);
+	public static void sendEncryptableMessage(Message message, boolean showReceived) {
+		sendEncryptableMessage(message, null, showReceived);
 	}
 
-	public static ChannelFuture sendEncryptableMessage(Message message, boolean showReceived) {
+	public static void sendEncryptableMessage(Message message) {
+		sendEncryptableMessage(message, null);
+	}
+
+	public static void sendEncryptableMessage(Message message, ChannelFutureListener channelFutureListener) {
+		sendEncryptableMessage(message, channelFutureListener, true);
+	}
+
+	public static void sendEncryptableMessage(Message message, ChannelFutureListener channelFutureListener, boolean showReceived) {
 		message.from = ClientLib.myUser;
 		if (message.context instanceof ClientUser && (ALWAYS_OTR || OTRChatManager.isOTR((ClientUser) message.context))) {
 			message.encrypted = true;
-			return OTRChatManager.sendMessage(message, showReceived);
+			OTRChatManager.sendMessage(message, channelFutureListener, showReceived);
 		} else {
-			return ClientLib.sendMessage(message, showReceived);
+			ClientLib.sendMessage(message, channelFutureListener, showReceived);
 		}
 	}
 
-	public static ChannelFuture sendMessage(Message message) {
-		return sendMessage(message, true);
+	public static void sendMessage(Message message, boolean showReceived) {
+		sendMessage(message, null, showReceived);
 	}
 
-	public static ChannelFuture sendMessage(Message message, boolean showReceived) {
+	public static void sendMessage(Message message) {
+		sendMessage(message, null);
+	}
+
+	public static void sendMessage(Message message, ChannelFutureListener channelFutureListener) {
+		sendMessage(message, channelFutureListener, true);
+	}
+
+	public static void sendMessage(Message message, ChannelFutureListener channelFutureListener, boolean showReceived) {
 		message.from = myUser;
 		PacketMessageToServer packetMessage = new PacketMessageToServer();
 		packetMessage.message = message;
 
 		ChannelFuture channelFuture = sendPacket(packetMessage);
+		if(channelFutureListener != null) {
+			channelFuture.addListener(channelFutureListener);
+		}
 
 		if (showReceived) {
 			FormMain.instance.getChatTab(message).messageReceived(message);
 		}
-
-		return channelFuture;
 	}
 
 	public static void login() {

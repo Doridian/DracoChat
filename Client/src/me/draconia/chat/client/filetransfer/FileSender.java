@@ -31,6 +31,14 @@ public class FileSender implements ChatTab.StatusTextHook {
 
 	private static final SecureRandom secureRandom = new SecureRandom();
 
+	private class FileSenderChannelFutureListener implements ChannelFutureListener {
+		@Override
+		public void operationComplete(ChannelFuture channelFuture) throws Exception {
+			if(channelFuture.isSuccess())
+				processFileTransfer();
+		}
+	}
+
 	@Override
 	public String getStatusText() {
 		return "Sending " + file.getName() + " [" + ((int)((((float)pos) / ((float)len)) * 100)) + "%]";
@@ -90,15 +98,13 @@ public class FileSender implements ChatTab.StatusTextHook {
 			binaryMessage.content = byteArrayOutputStream.toByteArray();
 			dataOutputStream.close();
 
-			ClientLib.sendEncryptableMessage(binaryMessage, false);
+			ClientLib.sendEncryptableMessage(binaryMessage, new FileSenderChannelFutureListener(), false);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new Error("Wat?");
 		}
 
 		FormMain.instance.getChatTab(sendTo).addStatusTextHook(this);
-
-		processFileTransfer();
 	}
 
 	private final LongCodec longCodec = new LongCodec();
@@ -162,14 +168,7 @@ public class FileSender implements ChatTab.StatusTextHook {
 			binaryMessage.type = BinaryMessage.TYPE_FILE_DATA;
 			binaryMessage.content = packetData;
 
-			ChannelFuture channelFuture = ClientLib.sendMessage(binaryMessage, false);
-			channelFuture.addListener(new ChannelFutureListener() {
-				@Override
-				public void operationComplete(ChannelFuture channelFuture) throws Exception {
-					if(channelFuture.isSuccess())
-						processFileTransfer();
-				}
-			});
+			ClientLib.sendMessage(binaryMessage, new FileSenderChannelFutureListener(), false);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new Error("Wat?");

@@ -9,7 +9,7 @@ import me.draconia.chat.types.Message;
 import me.draconia.chat.types.TextMessage;
 import org.bouncycastle.jce.spec.IEKeySpec;
 import org.bouncycastle.jce.spec.IESParameterSpec;
-import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 
 import javax.crypto.Cipher;
 import java.security.KeyFactory;
@@ -24,7 +24,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class OTRChatManager {
 	private final static HashMap<ClientUser, PublicKey> userKeys = new HashMap<ClientUser, PublicKey>();
 
-	private final static HashMap<ClientUser, Queue<Message>> outgoingMessageQueue = new HashMap<ClientUser, Queue<Message>>();
+	private static class MessageInfo {
+		Message message;
+		ChannelFutureListener channelFutureListener;
+
+		MessageInfo(Message message, ChannelFutureListener channelFutureListener) {
+			this.message = message;
+			this.channelFutureListener = channelFutureListener;
+		}
+	}
+
+	private final static HashMap<ClientUser, Queue<MessageInfo>> outgoingMessageQueue = new HashMap<ClientUser, Queue<MessageInfo>>();
 	private final static HashMap<ClientUser, Queue<BinaryMessage>> incomingMessageQueue = new HashMap<ClientUser, Queue<BinaryMessage>>();
 
 	private static final SecureRandom secureRandom = new SecureRandom();
@@ -46,11 +56,19 @@ public class OTRChatManager {
 		return userKeys.containsKey(otherUser);
 	}
 
-	public static ChannelFuture sendMessage(Message message) {
-		return sendMessage(message, true);
+	public static void sendMessage(Message message) {
+		sendMessage(message, null);
 	}
 
-	public static ChannelFuture sendMessage(Message message, boolean showReceived) {
+	public static void sendMessage(Message message, boolean showReceived) {
+		sendMessage(message, null, showReceived);
+	}
+
+	public static void sendMessage(Message message, ChannelFutureListener channelFutureListener) {
+		sendMessage(message, channelFutureListener, true);
+	}
+
+	public static void sendMessage(Message message, ChannelFutureListener channelFutureListener, boolean showReceived) {
 		if (!(message.context instanceof ClientUser)) {
 			throw new Error("Only PMs can be encrypted");
 		}
@@ -60,14 +78,14 @@ public class OTRChatManager {
 		if (publicKey == null) {
 			FormMain.instance.getChatTab(message.context).addText("[OTR] Trying to establish OTR session...");
 
-			Queue<Message> messages = outgoingMessageQueue.get(clientUser);
+			Queue<MessageInfo> messages = outgoingMessageQueue.get(clientUser);
 			if (messages == null) {
-				messages = new ConcurrentLinkedQueue<Message>();
+				messages = new ConcurrentLinkedQueue<MessageInfo>();
 				outgoingMessageQueue.put(clientUser, messages);
 			}
-			messages.add(message);
+			messages.add(new MessageInfo(message, channelFutureListener));
 			initWith(clientUser);
-			return null;
+			return;
 		}
 
 		BinaryMessage binaryMessage = new BinaryMessage();
@@ -103,12 +121,10 @@ public class OTRChatManager {
 			throw new Error("ERROR");
 		}
 
-		ChannelFuture channelFuture = ClientLib.sendMessage(binaryMessage, false);
+		ClientLib.sendMessage(binaryMessage, channelFutureListener, false);
 		if(showReceived) {
 			FormMain.instance.getChatTab(message).messageReceived(message);
 		}
-
-		return channelFuture;
 	}
 
 	public static void messageReceived(BinaryMessage binaryMessage) {
@@ -142,10 +158,10 @@ public class OTRChatManager {
 					e.printStackTrace();
 					return;
 				}
-				Queue<Message> messages = outgoingMessageQueue.remove(from);
+				Queue<MessageInfo> messages = outgoingMessageQueue.remove(from);
 				if (messages != null) {
-					for (Message message : messages) {
-						sendMessage(message);
+					for (MessageInfo message : messages) {
+						sendMessage(message.message, message.channelFutureListener);
 					}
 				}
 				Queue<BinaryMessage> binaryMessages = incomingMessageQueue.remove(from);
