@@ -1,6 +1,7 @@
 package me.draconia.chat.client.gui;
 
 import me.draconia.chat.client.ClientLib;
+import me.draconia.chat.client.filetransfer.FileReceiver;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.commands.BaseClientCommand;
 import me.draconia.chat.types.*;
@@ -27,6 +28,8 @@ public class ChatTab {
 	private JScrollPane chatLogScrollPane;
 
 	private final MessageContext relatedContext;
+
+	private FileReceiver fileReceiver;
 
 	public ChatTab(MessageContext relatedContext) {
 		this.relatedContext = relatedContext;
@@ -110,8 +113,13 @@ public class ChatTab {
 						break;
 				}
 			}
-		} else {
-			//Well, erm....
+		} else if(message instanceof BinaryMessage) {
+			if(message.type == BinaryMessage.TYPE_FILE_START) {
+				fileReceiver = new FileReceiver((BinaryMessage)message);
+			} else if(message.type == BinaryMessage.TYPE_FILE_DATA || message.type == BinaryMessage.TYPE_FILE_END) {
+				if(fileReceiver != null)
+					fileReceiver.receivedMessage((BinaryMessage)message);
+			}
 		}
 	}
 

@@ -1,5 +1,6 @@
 package me.draconia.chat.client;
 
+import me.draconia.chat.client.filetransfer.FileReceiver;
 import me.draconia.chat.client.gui.ChatTab;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.otr.OTRChatManager;
@@ -19,6 +20,8 @@ import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 
 public class ClientPacketHandler extends PacketHandler {
+	private FileReceiver fileReceiver;
+
 	@Override
 	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
 		final SslHandler sslHandler = ctx.getPipeline().get(SslHandler.class);
@@ -137,6 +140,9 @@ public class ClientPacketHandler extends PacketHandler {
 					BinaryMessage binaryMessage = (BinaryMessage) message;
 					if (binaryMessage.type == BinaryMessage.TYPE_OTR_MESSGAE || binaryMessage.type == BinaryMessage.TYPE_OTR_PUBKEY_1 || binaryMessage.type == BinaryMessage.TYPE_OTR_PUBKEY_2 || binaryMessage.type == BinaryMessage.TYPE_OTR_ERROR) {
 						OTRChatManager.messageReceived(binaryMessage);
+					} else if(binaryMessage.type == BinaryMessage.TYPE_FILE_DATA || binaryMessage.type == BinaryMessage.TYPE_FILE_END || binaryMessage.type == BinaryMessage.TYPE_FILE_START) {
+						ChatTab chatTab = FormMain.instance.getChatTab(message);
+						chatTab.messageReceived(message);
 					}
 				}
 				break;

@@ -46,6 +46,10 @@ public class OTRChatManager {
 	}
 
 	public static void sendMessage(Message message) {
+		sendMessage(message, true);
+	}
+
+	public static void sendMessage(Message message, boolean showReceived) {
 		if (!(message.context instanceof ClientUser)) {
 			throw new Error("Only PMs can be encrypted");
 		}
@@ -99,7 +103,9 @@ public class OTRChatManager {
 		}
 
 		ClientLib.sendMessage(binaryMessage, false);
-		FormMain.instance.getChatTab(message).messageReceived(message);
+		if(showReceived) {
+			FormMain.instance.getChatTab(message).messageReceived(message);
+		}
 	}
 
 	public static void messageReceived(BinaryMessage binaryMessage) {

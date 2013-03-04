@@ -6,5 +6,9 @@ public class BinaryMessage extends Message {
 	public static final byte TYPE_OTR_MESSGAE = 3;
 	public static final byte TYPE_OTR_ERROR = 4;
 
+	public static final byte TYPE_FILE_START = 10;
+	public static final byte TYPE_FILE_DATA = 11;
+	public static final byte TYPE_FILE_END = 12;
+
 	public byte[] content;
 }
