@@ -4,11 +4,11 @@ import me.draconia.chat.client.gui.ChatTab;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.types.BinaryMessage;
+import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.modes.CBCBlockCipher;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.crypto.params.KeyParameter;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
@@ -21,8 +21,8 @@ public class FileReceiver implements ChatTab.StatusTextHook {
 	private final long len;
 	private long written = 0;
 
-	private final Cipher cipher;
-	private final SecretKey secretKey;
+	private final PaddedBufferedBlockCipher cipher;
+	private KeyParameter aesSecretKey;
 
 	public FileReceiver(BinaryMessage binaryMessage) {
 		try {
@@ -37,10 +37,10 @@ public class FileReceiver implements ChatTab.StatusTextHook {
 
 			len = dataInputStream.readLong();
 
-			byte[] aesKey = new byte[16];
+			byte[] aesKey = new byte[32];
 			dataInputStream.read(aesKey);
-			secretKey = new SecretKeySpec(aesKey, "AES");
-			cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			aesSecretKey = new KeyParameter(aesKey);
+			cipher = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
 
 			File tmpFile = new File("files/" + binaryMessage.from.login + "/");
 			tmpFile.mkdirs();
@@ -74,18 +74,20 @@ public class FileReceiver implements ChatTab.StatusTextHook {
 
 	private final LongCodec longCodec = new LongCodec();
 	private final IntCodec intCodec = new IntCodec();
-	private final byte[] IV = new byte[16];
+	private byte[] decFileData = new byte[0];
 
 	private synchronized void receivedFileData(BinaryMessage binaryMessage) throws Exception {
 		long packetPos = longCodec.toNum(binaryMessage.content, 0);
 		int packetLen = intCodec.toNum(binaryMessage.content, 8);
 
-		System.arraycopy(binaryMessage.content, 12, IV, 0, 16);
+		cipher.init(false, aesSecretKey);
+		packetLen = cipher.getOutputSize(packetLen);
+		if(decFileData.length < packetLen) {
+			decFileData = new byte[packetLen];
+		}
 
-		cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(IV));
-		final byte[] decFileData = cipher.doFinal(binaryMessage.content, 28, packetLen);
-
-		packetLen = decFileData.length;
+		packetLen = cipher.processBytes(binaryMessage.content, 12, packetLen, decFileData, 0);
+		packetLen += cipher.doFinal(decFileData, packetLen);
 
 		randomAccessFile.seek(packetPos);
 		randomAccessFile.write(decFileData);

@@ -5,16 +5,18 @@ import me.draconia.chat.client.gui.ChatTab;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.types.BinaryMessage;
+import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.modes.CBCBlockCipher;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.crypto.params.KeyParameter;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
-import javax.crypto.Cipher;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.security.SecureRandom;
 import java.util.HashMap;
 
 public class FileSender implements ChatTab.StatusTextHook {
@@ -24,8 +26,10 @@ public class FileSender implements ChatTab.StatusTextHook {
 	private long pos = 0;
 	private long len;
 
-	private final Cipher cipher;
-	private SecretKey aesSecretKey;
+	private final PaddedBufferedBlockCipher cipher;
+	private KeyParameter aesSecretKey;
+
+	private static final SecureRandom secureRandom = new SecureRandom();
 
 	@Override
 	public String getStatusText() {
@@ -61,11 +65,10 @@ public class FileSender implements ChatTab.StatusTextHook {
 		try {
 			this.fileInputStream = new FileInputStream(file);
 
-			KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-			keyGenerator.init(128);
-			aesSecretKey = keyGenerator.generateKey();
-			byte[] aesKey = aesSecretKey.getEncoded();
-			cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+			byte[] aesKey = new byte[32];
+			secureRandom.nextBytes(aesKey);
+			aesSecretKey = new KeyParameter(aesKey);
+			cipher = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
 
 			BinaryMessage binaryMessage = new BinaryMessage();
 			binaryMessage.context = sendTo;
@@ -140,14 +143,16 @@ public class FileSender implements ChatTab.StatusTextHook {
 				return;
 			}
 
-			cipher.init(Cipher.ENCRYPT_MODE, aesSecretKey);
-			final byte[] encFileData = cipher.doFinal(fileData, 0, readLen);
+			cipher.init(true, aesSecretKey);
+			int outputtedSize = cipher.getOutputSize(fileData.length);
+			final byte[] encFileData = new byte[outputtedSize];
 
-			System.arraycopy(cipher.getIV(), 0, packetData, 12, 16);
+			outputtedSize = cipher.processBytes(fileData, 0, fileData.length, encFileData, 0);
+			outputtedSize += cipher.doFinal(encFileData, outputtedSize);
 
-			System.arraycopy(encFileData, 0, packetData, 28, encFileData.length);
+			System.arraycopy(encFileData, 0, packetData, 12, outputtedSize);
 			System.arraycopy(longCodec.toBytes(pos), 0, packetData, 0, 8);
-			System.arraycopy(intCodec.toBytes(encFileData.length), 0, packetData, 8, 4);
+			System.arraycopy(intCodec.toBytes(outputtedSize), 0, packetData, 8, 4);
 
 			pos += readLen;
 
