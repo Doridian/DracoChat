@@ -9,6 +9,7 @@ import me.draconia.chat.types.Message;
 import me.draconia.chat.types.TextMessage;
 import org.bouncycastle.jce.spec.IEKeySpec;
 import org.bouncycastle.jce.spec.IESParameterSpec;
+import org.jboss.netty.channel.ChannelFuture;
 
 import javax.crypto.Cipher;
 import java.security.KeyFactory;
@@ -45,11 +46,11 @@ public class OTRChatManager {
 		return userKeys.containsKey(otherUser);
 	}
 
-	public static void sendMessage(Message message) {
-		sendMessage(message, true);
+	public static ChannelFuture sendMessage(Message message) {
+		return sendMessage(message, true);
 	}
 
-	public static void sendMessage(Message message, boolean showReceived) {
+	public static ChannelFuture sendMessage(Message message, boolean showReceived) {
 		if (!(message.context instanceof ClientUser)) {
 			throw new Error("Only PMs can be encrypted");
 		}
@@ -66,7 +67,7 @@ public class OTRChatManager {
 			}
 			messages.add(message);
 			initWith(clientUser);
-			return;
+			return null;
 		}
 
 		BinaryMessage binaryMessage = new BinaryMessage();
@@ -102,10 +103,12 @@ public class OTRChatManager {
 			throw new Error("ERROR");
 		}
 
-		ClientLib.sendMessage(binaryMessage, false);
+		ChannelFuture channelFuture = ClientLib.sendMessage(binaryMessage, false);
 		if(showReceived) {
 			FormMain.instance.getChatTab(message).messageReceived(message);
 		}
+
+		return channelFuture;
 	}
 
 	public static void messageReceived(BinaryMessage binaryMessage) {

@@ -38,7 +38,7 @@ public class FormMain {
 	public static FormMain instance;
 	public static ChatTab genericChatTab;
 
-	protected JFrame rootFrame;
+	public JFrame rootFrame;
 
 	private boolean runRefreshSubscriptionsThread;
 	private Thread refreshSubscriptionsThread;

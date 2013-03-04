@@ -17,9 +17,9 @@ import java.net.InetSocketAddress;
 public class ClientLib {
 	protected static Channel clientDataChannel;
 
-	public static void sendPacket(Packet packet) {
-		if (clientDataChannel == null) return;
-		clientDataChannel.write(packet.getData());
+	public static ChannelFuture sendPacket(Packet packet) {
+		if (clientDataChannel == null) return null;
+		return clientDataChannel.write(packet.getData());
 	}
 
 	public static String myLogin = null;
@@ -39,34 +39,36 @@ public class ClientLib {
 
 	public static ClientUser myUser;
 
-	public static void sendEncryptableMessage(Message message) {
-		sendEncryptableMessage(message, true);
+	public static ChannelFuture sendEncryptableMessage(Message message) {
+		return sendEncryptableMessage(message, true);
 	}
 
-	public static void sendEncryptableMessage(Message message, boolean showReceived) {
+	public static ChannelFuture sendEncryptableMessage(Message message, boolean showReceived) {
 		message.from = ClientLib.myUser;
 		if (message.context instanceof ClientUser && (ALWAYS_OTR || OTRChatManager.isOTR((ClientUser) message.context))) {
 			message.encrypted = true;
-			OTRChatManager.sendMessage(message, showReceived);
+			return OTRChatManager.sendMessage(message, showReceived);
 		} else {
-			ClientLib.sendMessage(message, showReceived);
+			return ClientLib.sendMessage(message, showReceived);
 		}
 	}
 
-	public static void sendMessage(Message message) {
-		sendMessage(message, true);
+	public static ChannelFuture sendMessage(Message message) {
+		return sendMessage(message, true);
 	}
 
-	public static void sendMessage(Message message, boolean showReceived) {
+	public static ChannelFuture sendMessage(Message message, boolean showReceived) {
 		message.from = myUser;
 		PacketMessageToServer packetMessage = new PacketMessageToServer();
 		packetMessage.message = message;
 
-		sendPacket(packetMessage);
+		ChannelFuture channelFuture = sendPacket(packetMessage);
 
 		if (showReceived) {
 			FormMain.instance.getChatTab(message).messageReceived(message);
 		}
+
+		return channelFuture;
 	}
 
 	public static void login() {

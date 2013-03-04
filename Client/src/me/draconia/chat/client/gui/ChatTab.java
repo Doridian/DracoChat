@@ -26,6 +26,7 @@ public class ChatTab {
 	private JTextField chatEntry;
 	private JList userList;
 	private JScrollPane chatLogScrollPane;
+	private JLabel statusBar;
 
 	private final MessageContext relatedContext;
 
@@ -69,6 +70,21 @@ public class ChatTab {
 
 		userListDataModel = new UserListDataModel();
 		userList.setModel(userListDataModel);
+
+		new Thread() {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(1000);
+				} catch (Exception e) { }
+				while(statusBar.isValid()) {
+					refreshStatusText();
+					try {
+						Thread.sleep(500);
+					} catch (Exception e) { }
+				}
+			}
+		}.start();
 	}
 
 	private void sendChat() {
@@ -279,5 +295,40 @@ public class ChatTab {
 		}
 		chatTabEntryDisabledThread = new ChatTabEntryDisabledThread(millis);
 		chatTabEntryDisabledThread.start();
+	}
+
+	public interface StatusTextHook {
+		public String getStatusText();
+	}
+
+	private void refreshStatusText() {
+		StringBuilder statusText = new StringBuilder();
+		boolean isPop = false;
+		for(StatusTextHook statusTextHook : statusTextHooks) {
+			String res = statusTextHook.getStatusText();
+			if(res != null && !res.isEmpty()) {
+				if(!isPop) {
+					isPop = true;
+				} else {
+					statusText.append(", ");
+				}
+				statusText.append(res);
+			}
+		}
+		statusBar.setText(statusText.toString());
+	}
+
+	private final HashSet<StatusTextHook> statusTextHooks = new HashSet<StatusTextHook>();
+
+	public void addStatusTextHook(StatusTextHook statusTextHook) {
+		synchronized (statusTextHooks) {
+			statusTextHooks.add(statusTextHook);
+		}
+	}
+
+	public void removeStatusTextHook(StatusTextHook statusTextHook) {
+		synchronized (statusTextHooks) {
+			statusTextHooks.remove(statusTextHook);
+		}
 	}
 }

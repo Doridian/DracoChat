@@ -1,8 +1,12 @@
 package me.draconia.chat.client.filetransfer;
 
 import me.draconia.chat.client.ClientLib;
+import me.draconia.chat.client.gui.ChatTab;
+import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.types.BinaryMessage;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -11,8 +15,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.HashMap;
 
-public class FileSender {
+public class FileSender implements ChatTab.StatusTextHook {
 	private final File file;
 	private final FileInputStream fileInputStream;
 	private final ClientUser sendTo;
@@ -22,11 +27,28 @@ public class FileSender {
 	private final Cipher cipher;
 	private SecretKey aesSecretKey;
 
-	private final Thread fileSenderThread;
+	@Override
+	public String getStatusText() {
+		return "Sending " + file.getName() + " [" + ((int)((((float)pos) / ((float)len)) * 100)) + "%]";
+	}
 
 	private boolean boolFinished = false;
 	public boolean isFinished() {
 		return boolFinished;
+	}
+
+	private static final HashMap<ClientUser, FileSender> fileSenders = new HashMap<ClientUser, FileSender>();
+	public static void sendFile(ClientUser clientUser, File file) {
+		FileSender fileSender;
+		synchronized (fileSenders) {
+			if((fileSender = fileSenders.get(clientUser)) != null) {
+				if(!fileSender.isFinished()) {
+					throw new Error("Sorry, there is already a file transfer with that user in progress");
+				}
+			}
+			fileSender = new FileSender(clientUser, file);
+			fileSenders.put(clientUser, fileSender);
+		}
 	}
 
 	public FileSender(ClientUser sendTo, File file) {
@@ -71,14 +93,9 @@ public class FileSender {
 			throw new Error("Wat?");
 		}
 
-		fileSenderThread = new Thread() {
-			@Override
-			public void run() {
-				processFileTransfer();
-				boolFinished = true;
-			}
-		};
-		fileSenderThread.start();
+		FormMain.instance.getChatTab(sendTo).addStatusTextHook(this);
+
+		processFileTransfer();
 	}
 
 	private final LongCodec longCodec = new LongCodec();
@@ -86,13 +103,22 @@ public class FileSender {
 	private static final int PACKET_SIZE = 4096;
 
 	private void processFileTransfer() {
-		while(pos < len) {
+		if(pos < len) {
 			sendFileData();
+			return;
 		}
+
 		try {
 			fileInputStream.close();
 		} catch (Exception e) { }
+
 		sendFileEnd();
+
+		boolFinished = true;
+
+		ChatTab chatTab = FormMain.instance.getChatTab(sendTo);
+		chatTab.addText("[FILE] Sent " + file.getName());
+		chatTab.removeStatusTextHook(this);
 	}
 
 	private final byte[] packetData = new byte[PACKET_SIZE + 32 + 8 + 8 + 16];
@@ -101,7 +127,18 @@ public class FileSender {
 	private synchronized void sendFileData() {
 		try {
 			int readLen = fileInputStream.read(fileData, 0, PACKET_SIZE);
-			if(readLen < 1) return;
+			if(readLen < 1) {
+				new Thread() {
+					@Override
+					public void run() {
+						try {
+							Thread.sleep(10);
+						} catch (Exception e) { }
+						processFileTransfer();
+					}
+				}.start();
+				return;
+			}
 
 			cipher.init(Cipher.ENCRYPT_MODE, aesSecretKey);
 			final byte[] encFileData = cipher.doFinal(fileData, 0, readLen);
@@ -120,7 +157,14 @@ public class FileSender {
 			binaryMessage.type = BinaryMessage.TYPE_FILE_DATA;
 			binaryMessage.content = packetData;
 
-			ClientLib.sendMessage(binaryMessage, false);
+			ChannelFuture channelFuture = ClientLib.sendMessage(binaryMessage, false);
+			channelFuture.addListener(new ChannelFutureListener() {
+				@Override
+				public void operationComplete(ChannelFuture channelFuture) throws Exception {
+					if(channelFuture.isSuccess())
+						processFileTransfer();
+				}
+			});
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new Error("Wat?");

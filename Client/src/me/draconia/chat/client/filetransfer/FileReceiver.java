@@ -1,5 +1,6 @@
 package me.draconia.chat.client.filetransfer;
 
+import me.draconia.chat.client.gui.ChatTab;
 import me.draconia.chat.client.gui.FormMain;
 import me.draconia.chat.client.types.ClientUser;
 import me.draconia.chat.types.BinaryMessage;
@@ -13,7 +14,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.RandomAccessFile;
 
-public class FileReceiver {
+public class FileReceiver implements ChatTab.StatusTextHook {
 	private final File file;
 	private final RandomAccessFile randomAccessFile;
 	private final ClientUser recvFrom;
@@ -50,6 +51,8 @@ public class FileReceiver {
 			e.printStackTrace();
 			throw new Error("Wat?");
 		}
+
+		FormMain.instance.getChatTab(binaryMessage).addStatusTextHook(this);
 	}
 
 	public void receivedMessage(BinaryMessage binaryMessage) {
@@ -89,11 +92,18 @@ public class FileReceiver {
 		written += packetLen;
 		if(written >= len) {
 			randomAccessFile.close();
-			FormMain.instance.getChatTab(binaryMessage).addText("[FILE] Received " + file.getName());
+			ChatTab chatTab = FormMain.instance.getChatTab(binaryMessage);
+			chatTab.addText("[FILE] Received " + file.getName());
+			chatTab.removeStatusTextHook(this);
 		}
 	}
 
 	private void receivedFileEnd(BinaryMessage binaryMessage) throws Exception {
 
+	}
+
+	@Override
+	public String getStatusText() {
+		return "Receiving " + file.getName() + " [" + ((int)((((float)written) / ((float)len)) * 100)) + "%]";
 	}
 }
