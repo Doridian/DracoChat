@@ -90,7 +90,7 @@ public class FileReceiver implements ChatTab.StatusTextHook {
 		packetLen += cipher.doFinal(decFileData, packetLen);
 
 		randomAccessFile.seek(packetPos);
-		randomAccessFile.write(decFileData);
+		randomAccessFile.write(decFileData, 0, packetLen);
 		written += packetLen;
 		if(written >= len) {
 			randomAccessFile.close();

@@ -144,10 +144,10 @@ public class FileSender implements ChatTab.StatusTextHook {
 			}
 
 			cipher.init(true, aesSecretKey);
-			int outputtedSize = cipher.getOutputSize(fileData.length);
+			int outputtedSize = cipher.getOutputSize(readLen);
 			final byte[] encFileData = new byte[outputtedSize];
 
-			outputtedSize = cipher.processBytes(fileData, 0, fileData.length, encFileData, 0);
+			outputtedSize = cipher.processBytes(fileData, 0, readLen, encFileData, 0);
 			outputtedSize += cipher.doFinal(encFileData, outputtedSize);
 
 			System.arraycopy(encFileData, 0, packetData, 12, outputtedSize);
