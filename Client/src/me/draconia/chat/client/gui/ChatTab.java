@@ -14,10 +14,14 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.dnd.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,7 +40,7 @@ public class ChatTab {
 
 	private HashMap<Integer, FileReceiver> fileReceivers = new HashMap<Integer, FileReceiver>();
 
-	public ChatTab(MessageContext relatedContext) {
+	public ChatTab(final MessageContext relatedContext) {
 		this.relatedContext = relatedContext;
 		if (!(relatedContext instanceof Channel)) {
 			userList.setVisible(false);
@@ -46,6 +50,43 @@ public class ChatTab {
 			typingStatusTextHook = new ChannelTypingStatusTextHook();
 		} else if(relatedContext instanceof User) {
 			typingStatusTextHook = new UserTypingStatusTextHook();
+
+			final DropTarget fileTransferDropTarget = new DropTarget() {
+				@Override
+				public synchronized void drop(DropTargetDropEvent dtde) {
+					try {
+						Transferable transferable = dtde.getTransferable();
+						if(transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+							dtde.acceptDrop(DnDConstants.ACTION_COPY);
+							java.util.List<File> files = (java.util.List<File>)transferable.getTransferData(DataFlavor.javaFileListFlavor);
+							for(File file : files) {
+								FileSender.sendFile((ClientUser)relatedContext, file);
+							}
+							dtde.dropComplete(true);
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
+				@Override
+				public synchronized void dragEnter(DropTargetDragEvent dtde) {
+					if(dtde.getTransferable().isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+						dtde.acceptDrag(DnDConstants.ACTION_COPY);
+					}
+				}
+
+				@Override
+				public synchronized void dragOver(DropTargetDragEvent dtde) {
+					if(dtde.getTransferable().isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+						dtde.acceptDrag(DnDConstants.ACTION_COPY);
+					}
+				}
+			};
+
+			chatEntry.setDropTarget(fileTransferDropTarget);
+			chatTabPanel.setDropTarget(fileTransferDropTarget);
+			chatLog.setDropTarget(fileTransferDropTarget);
 		} else {
 			typingStatusTextHook = null;
 		}
