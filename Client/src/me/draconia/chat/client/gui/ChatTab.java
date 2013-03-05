@@ -9,6 +9,8 @@ import me.draconia.chat.commands.BaseClientCommand;
 import me.draconia.chat.types.*;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import java.awt.*;
@@ -39,15 +41,53 @@ public class ChatTab {
 		if (!(relatedContext instanceof Channel)) {
 			userList.setVisible(false);
 		}
+
+		if(relatedContext instanceof Channel) {
+			typingStatusTextHook = new ChannelTypingStatusTextHook();
+		} else if(relatedContext instanceof User) {
+			typingStatusTextHook = new UserTypingStatusTextHook();
+		} else {
+			typingStatusTextHook = null;
+		}
+
+		if(typingStatusTextHook != null) {
+			addStatusTextHook(typingStatusTextHook);
+		}
+
 		sendButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				sendChat();
 			}
 		});
+		chatEntry.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				refreshTypingState();
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				refreshTypingState();
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				refreshTypingState();
+			}
+
+			private void refreshTypingState() {
+				if (chatEntry.getText().length() > 0) {
+					setOwnTypingState(1);
+				} else {
+					setOwnTypingState(0);
+				}
+			}
+		});
 		chatEntry.addKeyListener(new KeyListener() {
 			@Override
 			public void keyTyped(KeyEvent e) {
+
 			}
 
 			@Override
@@ -84,6 +124,23 @@ public class ChatTab {
 					try {
 						Thread.sleep(500);
 					} catch (Exception e) { }
+				}
+			}
+		}.start();
+
+		new Thread() {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(1000);
+				} catch (Exception e) { }
+				while(statusBar.isValid()) {
+					if(ownTypingState == 1 && typingStateLastSet < System.currentTimeMillis() - 10000) {
+						setOwnTypingState(2);
+					}
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) { }
 				}
 			}
 		}.start();
@@ -159,6 +216,10 @@ public class ChatTab {
 				}
 			} else if(message.type == BinaryMessage.TYPE_FILE_START_RESPONSE) {
 				FileSender.fileTransferAckNackReceived(binaryMessage);
+			} else if(message.type == BinaryMessage.TYPE_TYPING_STATE) {
+				if(typingStatusTextHook != null) {
+					typingStatusTextHook.setTypingState(message.from, binaryMessage.content[0]);
+				}
 			}
 		}
 	}
@@ -325,6 +386,63 @@ public class ChatTab {
 		public String getStatusText();
 	}
 
+	private byte ownTypingState = 0;
+	private long typingStateLastSet = 0;
+	private void setOwnTypingState(int state) {
+		typingStateLastSet = System.currentTimeMillis();
+
+		if(state == ownTypingState)
+			return;
+		ownTypingState = (byte)state;
+
+		BinaryMessage binaryMessage = new BinaryMessage();
+		binaryMessage.context = relatedContext;
+		binaryMessage.from = ClientLib.myUser;
+		binaryMessage.type = BinaryMessage.TYPE_TYPING_STATE;
+		binaryMessage.content = new byte[] { ownTypingState };
+		ClientLib.sendEncryptableMessage(binaryMessage, false);
+	}
+
+	private TypingStatusTextHook typingStatusTextHook;
+
+	private interface TypingStatusTextHook extends StatusTextHook {
+		public void setTypingState(User user, byte typingState);
+	}
+
+	private class UserTypingStatusTextHook implements TypingStatusTextHook {
+		private byte typingState = 0;
+
+		@Override
+		public String getStatusText() {
+			switch (typingState) {
+				default:
+				case 0:
+					return null;
+				case 1:
+					return ((User)relatedContext).getNickname() + " is typing";
+				case 2:
+					return ((User)relatedContext).getNickname() + " has entered text";
+			}
+		}
+
+		@Override
+		public void setTypingState(User user, byte typingState) {
+			this.typingState = typingState;
+		}
+	}
+
+	private class ChannelTypingStatusTextHook implements TypingStatusTextHook {
+		@Override
+		public String getStatusText() {
+			return null;
+		}
+
+		@Override
+		public void setTypingState(User user, byte typingState) {
+
+		}
+	}
+
 	private void refreshStatusText() {
 		StringBuilder statusText = new StringBuilder();
 		boolean isPop = false;
@@ -339,7 +457,12 @@ public class ChatTab {
 				statusText.append(res);
 			}
 		}
-		statusBar.setText(statusText.toString());
+		String sbText = statusText.toString();
+		if(sbText.isEmpty()) {
+			statusBar.setText("Idle");
+		} else {
+			statusBar.setText(statusText.toString());
+		}
 	}
 
 	private final HashSet<StatusTextHook> statusTextHooks = new HashSet<StatusTextHook>();

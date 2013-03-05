@@ -11,5 +11,7 @@ public class BinaryMessage extends Message {
 	public static final byte TYPE_FILE_END = 12;
 	public static final byte TYPE_FILE_START_RESPONSE = 13;
 
+	public static final byte TYPE_TYPING_STATE = 20;
+
 	public byte[] content;
 }
